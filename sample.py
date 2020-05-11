@@ -23,23 +23,29 @@ class Dispatcher(object):
 
         self.save24: Dict[str, dict] = {}
 
-    def parse(self, *, payload: str):
-        header = self.header.parse2(payload=payload)
+    def parse(self, *, payload: str) -> Dict[str, any]:
+        result: Dict[str, any] = {}
+        header = self.header.parse(payload=payload)
         if 'type' in header:
+            result['header'] = header
             thisType = header['type']
             thisMMSI = header['mmsi']
             if thisType in (1, 2, 3):
                 s = self.type1to3.parse(payload=payload)
-                print('Type[%d] = %s' % (thisType, s))
+                result['body'] = s
+                # print('Type[%d] = %s' % (thisType, s))
             elif thisType == 5:
                 s = self.type5.parse(payload=payload)
-                print('Type[%d] = %s' % (thisType, s))
+                result['body'] = s
+                # print('Type[%d] = %s' % (thisType, s))
             elif thisType == 18:
                 s = self.type18.parse(payload=payload)
-                print('Type[%d] = %s' % (thisType, s))
+                result['body'] = s
+                # print('Type[%d] = %s' % (thisType, s))
             elif thisType == 19:
                 s = self.type19.parse(payload=payload)
-                print('Type[%d] = %s' % (thisType, s))
+                result['body'] = s
+                # print('Type[%d] = %s' % (thisType, s))
 
             elif thisType == 24:
 
@@ -49,28 +55,40 @@ class Dispatcher(object):
                 target = self.save24[thisMMSI]
 
                 partA = self.type24A.parse(payload=payload)
-                if partA:
+                if partA and partA['partno'] == 0:
                     target['A'] = partA
                 partB = self.type24B.parse(payload=payload)
-                if partB:
+                if partB and partB['partno'] == 1:
                     target['B'] = partB
 
                 if 'A' in target and 'B' in target:
                     s = target['A']
                     s.update(target['B'])
                     del(self.save24[thisMMSI])
-                    print('Type[%d] = %s' % (thisType, s))
+                    result['body'] = s
+                    # print('Type[%d] = %s' % (thisType, s))
             else:
                 # logger.debug('void %d' % (thisType,))
                 pass
         else:
             logger.critical('No type')
 
+        return result
+
 
 if __name__ == '__main__':
 
+    vessel: Dict[int, dict] = {}
     dispatcher = Dispatcher()
 
     with open('payload.txt', 'rt') as f:
         for p in f.read().split('\n'):
-            dispatcher.parse(payload=p)
+            ooo = dispatcher.parse(payload=p)
+            if 'header' in ooo.keys() and 'body' in ooo.keys():
+                header = ooo['header']
+                body = ooo['body']
+                if header['type'] in [5, 24]:
+                    vessel[header['mmsi']] = body
+                    pass
+
+        print(vessel)

@@ -56,8 +56,11 @@ class Structure(Engine):
 if __name__ == '__main__':
 
     s = Structure()
+    print("self.member: Dict[str, any] = {")
     for k, v in s.body.items():
         print("'%s': Member(type='%s', offset=%s, length=%s)," % (k, v['type'], v['offset'], v['length']))
+    print("}")
+
 #
 # if __name__ == '__main__':
 #
