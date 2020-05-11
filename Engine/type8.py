@@ -1,4 +1,4 @@
-from Engine.engine import Engine as Template
+from Engine.template import Engine as Template
 
 
 class Structure(Template):  # Type 8: Binary Broadcast Message

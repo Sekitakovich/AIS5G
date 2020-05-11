@@ -1,5 +1,5 @@
 from typing import Dict
-from Engine.engine import Engine, Member
+from Engine.template import Engine, Member
 
 
 class Structure(Engine):  # Type 21: Aid-to-Navigation Report
@@ -7,27 +7,6 @@ class Structure(Engine):  # Type 21: Aid-to-Navigation Report
     def __init__(self):
 
         super().__init__()
-
-        self.body = {
-            'aid_type': {'type': 'e', 'offset': 38, 'length': 5},
-            'name': {'type': 't', 'offset': 43, 'length': 120},
-            'accuracy': {'type': 'b', 'offset': 163, 'length': 1},
-            'lon': {'type': 'I4', 'offset': 164, 'length': 28},
-            'lat': {'type': 'I4', 'offset': 192, 'length': 27},
-            'to_bow': {'type': 'u', 'offset': 219, 'length': 9},
-            'to_stern': {'type': 'u', 'offset': 228, 'length': 9},
-            'to_port': {'type': 'u', 'offset': 237, 'length': 6},
-            'to_starboard': {'type': 'u', 'offset': 243, 'length': 6},
-            'epfd': {'type': 'e', 'offset': 249, 'length': 4},
-            'second': {'type': 'x', 'offset': 253, 'length': 6},
-            'off_position': {'type': 'b', 'offset': 259, 'length': 1},
-            'regional': {'type': 'u', 'offset': 260, 'length': 8},
-            'raim': {'type': 'b', 'offset': 268, 'length': 1},
-            'virtual_aid': {'type': 'b', 'offset': 269, 'length': 1},
-            'assigned': {'type': 'b', 'offset': 270, 'length': 1},
-            'spare': {'type': 'x', 'offset': 271, 'length': 1},
-            'extension': {'type': 't', 'offset': 272, 'length': 88},
-        }
 
         self.member: Dict[str, Member] = {
             'aid_type': Member(type='e', offset=38, length=5),
@@ -49,14 +28,3 @@ class Structure(Engine):  # Type 21: Aid-to-Navigation Report
             'spare': Member(type='x', offset=271, length=1),
             'extension': Member(type='t', offset=272, length=88),
         }
-
-
-if __name__ == '__main__':
-
-    s = Structure()
-    print("self.member: Dict[str, Member] = {")
-    for k, v in s.body.items():
-        print("'%s': Member(type='%s', offset=%s, length=%s)," % (k, v['type'], v['offset'], v['length']))
-    print("}")
-
-

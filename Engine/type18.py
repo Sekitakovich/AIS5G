@@ -1,5 +1,5 @@
 from typing import Dict
-from Engine.engine import Engine, Member
+from Engine.template import Engine, Member
 
 
 class Structure(Engine):
@@ -11,26 +11,6 @@ class Structure(Engine):
     def __init__(self):
 
         super().__init__()
-
-        self.body = {
-            'reserved': {'type': 'x', 'offset': 38, 'length': 8},
-            'speed': {'type': 'U1', 'offset': 46, 'length': 10},
-            'accuracy': {'type': 'b', 'offset': 56, 'length': 1},
-            'lon': {'type': 'I4', 'offset': 57, 'length': 28},
-            'lat': {'type': 'I4', 'offset': 85, 'length': 27},
-            'course': {'type': 'U1', 'offset': 112, 'length': 12},
-            'heading': {'type': 'u', 'offset': 124, 'length': 9},
-            'second': {'type': 'u', 'offset': 133, 'length': 6},
-            'regional': {'type': 'u', 'offset': 139, 'length': 2},
-            'cs': {'type': 'b', 'offset': 141, 'length': 1},
-            'display': {'type': 'b', 'offset': 142, 'length': 1},
-            'dsc': {'type': 'b', 'offset': 143, 'length': 1},
-            'band': {'type': 'b', 'offset': 144, 'length': 1},
-            'msg22': {'type': 'b', 'offset': 145, 'length': 1},
-            'assigned': {'type': 'b', 'offset': 146, 'length': 1},
-            'raim': {'type': 'b', 'offset': 147, 'length': 1},
-            'radio': {'type': 'u', 'offset': 148, 'length': 20},
-        }
 
         self.member: Dict[str, Member] = {
             'reserved': Member(type='x', offset=38, length=8),
@@ -51,9 +31,3 @@ class Structure(Engine):
             'raim': Member(type='b', offset=147, length=1),
             'radio': Member(type='u', offset=148, length=20),
         }
-
-if __name__ == '__main__':
-
-    s = Structure()
-    for k, v in s.body.items():
-        print("'%s': Member(type='%s', offset=%s, length=%s)," % (k, v['type'], v['offset'], v['length']))
