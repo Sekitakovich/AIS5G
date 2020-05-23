@@ -1,7 +1,8 @@
 from typing import Dict
 from loguru import logger
+from dataclasses import dataclass
 
-from Engine.header import Structure as Header
+from Engine.header import Structure as CommonHeader
 from Engine.type1to3 import Structure as Type1to3
 from Engine.type4and11 import Structure as Type4and11
 from Engine.type5 import Structure as Type5
@@ -18,12 +19,28 @@ from Engine.type20 import Structure as Type20
 from Engine.type21 import Structure as Type21
 from Engine.type24A import Structure as Type24A
 from Engine.type24B import Structure as Type24B
+from Engine.type27 import Structure as Type27
+
+
+@dataclass()
+class Header(object):
+    type: int
+    repeat: int
+    mmsi: int
+
+
+@dataclass()
+class Result(object):
+    header: Header
+    body: Dict[str, any]
+    completed: bool
+    support: bool
 
 
 class Dispatcher(object):
     def __init__(self):
 
-        self.header = Header()
+        self.header = CommonHeader()
         self.type1to3 = Type1to3()
         self.type4and11 = Type4and11()
         self.type5 = Type5()
@@ -40,83 +57,83 @@ class Dispatcher(object):
         self.type21 = Type21()
         self.type24A = Type24A()
         self.type24B = Type24B()
+        self.type27 = Type27()
 
         self.save24: Dict[str, dict] = {}
 
-    def parse(self, *, payload: str) -> Dict[str, any]:
-        result: Dict[str, any] = {}
+    def parse(self, *, payload: str) -> Result:
         header = self.header.parse(payload=payload)
+        result = Result(header=Header(type=header['type'], repeat=header['repeat'], mmsi=header['mmsi']), body={},
+                        completed=True, support=True)
         if 'type' in header:
-            result['header'] = header
             thisType = header['type']
             thisMMSI = header['mmsi']
             if thisType in (1, 2, 3):
                 s = self.type1to3.parse(payload=payload)
-                result['body'] = s
+                result.body = s
                 # print('Type[%d] = %s' % (thisType, s))
 
             elif thisType in [4, 11]:
                 s = self.type4and11.parse(payload=payload)
-                result['body'] = s
+                result.body = s
                 # print('Type[%d] = %s' % (thisType, s))
 
             elif thisType == 5:
                 s = self.type5.parse(payload=payload)
-                result['body'] = s
+                result.body = s
                 # print('Type[%d] = %s' % (thisType, s))
 
             elif thisType == 6:
                 s = self.type6.parse(payload=payload)
-                result['body'] = s
+                result.body = s
                 # print('Type[%d] = %s' % (thisType, s))
 
-            # elif thisType in [7, 13]:
-            #     s = self.type7and13.parse(payload=payload)
-            #     result['body'] = s
-            #     print('Type[%d] = %s' % (thisType, s))
+            elif thisType in [7, 13]:
+                result.support = False
+
+            elif thisType == 8:
+                result.support = False
 
             elif thisType == 12:
                 s = self.type12.parse(payload=payload)
-                result['body'] = s
+                result.body = s
                 # print('Type[%d] = %s' % (thisType, s))
 
             elif thisType == 14:
                 s = self.type14.parse(payload=payload)
-                result['body'] = s
+                result.body = s
                 # print('Type[%d] = %s' % (thisType, s))
 
-            # elif thisType == 15:
-            #     s = self.type15.parse(payload=payload)
-            #     result['body'] = s
-            #     print('Type[%d] = %s' % (thisType, s))
+            elif thisType == 15:
+                result.support = False
 
             elif thisType == 16:
                 s = self.type16.parse(payload=payload)
-                result['body'] = s
+                result.body = s
                 # print('Type[%d] = %s' % (thisType, s))
 
             elif thisType == 17:
                 s = self.type17.parse(payload=payload)
-                result['body'] = s
+                result.body = s
                 # print('Type[%d] = %s' % (thisType, s))
 
             elif thisType == 18:
                 s = self.type18.parse(payload=payload)
-                result['body'] = s
+                result.body = s
                 # print('Type[%d] = %s' % (thisType, s))
             elif thisType == 19:
                 s = self.type19.parse(payload=payload)
-                result['body'] = s
+                result.body = s
                 # print('Type[%d] = %s' % (thisType, s))
 
             elif thisType == 20:
                 s = self.type20.parse(payload=payload)
-                result['body'] = s
+                result.body = s
                 print('Type[%d] = %s' % (thisType, s))
 
             elif thisType == 21:
                 s = self.type21.parse(payload=payload)
-                result['body'] = s
+                result.body = s
                 # print('Type[%d] = %s' % (thisType, s))
 
             elif thisType == 24:
@@ -136,14 +153,24 @@ class Dispatcher(object):
                 if 'A' in target and 'B' in target:
                     s = target['A']
                     s.update(target['B'])
-                    del(self.save24[thisMMSI])
-                    result['body'] = s
+                    del (self.save24[thisMMSI])
+                    result.body = s
                     # print('Type[%d] = %s' % (thisType, s))
+                else:
+                    # result['completed'] = False
+                    result.completed = False
+
+            elif thisType == 27:
+                s = self.type27.parse(payload=payload)
+                result.body = s
+
             else:
+                result.completed = False
                 raise ValueError('void AIS type %d' % (thisType,))
                 # logger.debug('void %d' % (thisType,))
                 pass
         else:
+            result.completed = False
             raise ValueError('No valid type')
             # logger.critical('No type')
             pass
@@ -163,4 +190,3 @@ if __name__ == '__main__':
                 body = ooo['body']
                 if header['type'] in [5, 24]:
                     print(header, body)
-

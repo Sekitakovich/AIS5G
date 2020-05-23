@@ -3,17 +3,48 @@ import sqlite3
 from functools import reduce
 from operator import xor
 from loguru import logger
+from threading import Thread
+import queue
+from serial import Serial
+from contextlib import closing
 
-from dispatcher import Dispatcher
+from dispatcher import Dispatcher, Result
+
 
 class NMEA(object):
 
-    def __init__(self):
+    def __init__(self, *, portname: str = '', baudrate: int = 0):
 
         self.fragment = []
         self.seq = 0
 
         self.engine = Dispatcher()
+
+        self.quePoint = queue.Queue()
+        self.counter = 0
+
+        self.w = Thread(target=self.welcome, daemon=True)
+        self.w.start()
+
+        if portname:
+            self.portname = portname
+            self.baudrate = baudrate
+            self.s = Thread(target=self.listner, daemon=True)
+            self.s.start()
+
+    def listner(self):
+        try:
+            with closing(Serial(self.portname, baudrate=self.baudrate)) as sp:
+                while True:
+                    data = sp.readline()
+                    self.quePoint.put(data)
+        except (OSError, queue.Full) as e:
+            logger.critical(e)
+
+    def welcome(self):
+        while True:
+            obj = self.quePoint.get()
+            self.enter(nmea=obj)
 
     def parse(self, *, payload: bytes):
         try:
@@ -21,19 +52,18 @@ class NMEA(object):
         except ValueError as e:
             logger.error(e)
         else:
-            print(result)
-            # if 'header' in result.keys():
-            #     if result['header']['type'] == 24 and 'body' in result:
-            #         print(result)
+            if result.support == True and result.completed == True:
+                print(result)
             # else:
-            #     raise ValueError('Parse error')
+            #     print(self.counter)
+        self.counter += 1
 
     def enter(self, *, nmea: bytes) -> bool:
         success: bool = True
         try:
             part = nmea.split(b'*')
             main = part[0][1:]
-            if len(part)>1:
+            if len(part) > 1:
                 csum = int(part[1][:2], 16)
                 calc = reduce(xor, main, 0)
             else:
@@ -71,7 +101,7 @@ class NMEA(object):
                 raise ValueError('Checksum mismatch')
 
         except (IndexError, ValueError) as e:
-            success= False
+            success = False
             logger.error(e)
             logger.debug(nmea)
 
@@ -98,4 +128,5 @@ if __name__ == '__main__':
             for row in result:
                 item = dict(row)
                 nmea: bytes = item['nmea'].encode() + b'\r\n'
-                collector.enter(nmea=nmea)
+                # collector.enter(nmea=nmea)
+                collector.quePoint.put(nmea)
