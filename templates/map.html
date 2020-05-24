@@ -21,6 +21,33 @@
     jQuery(document).ready(function () {
         console.log('start');
 
+        class Location {
+            constructor() {
+                this.lat = 0.0;
+                this.lon = 0.0;
+                this.sog = 0.0;
+                this.hdg = 0;
+                this.isValidSOG = true;
+                this.isValidHDG = true;
+            }
+
+        }
+
+        class Ship {
+            constructor(name, type) {
+                this.img = type === 5 ? '../static/imgs/kaniS.png' : '../static/imgs/kameS.png';
+                this.name = name;
+                this.location = new Location();
+                this.icon = L.icon({iconUrl: this.img});
+                this.marker = L.marker(L.LatLng(0, 0), {icon: this.icon});
+                this.at = new Date();
+                this.show = false;
+                console.log(this);
+            }
+        }
+
+        let ship = [];
+
 // -------------------------------------------------------------------------------------------------
         const baseLatLng = [1.2893833333333333, 103.99735];
 // -------------------------------------------------------------------------------------------------
@@ -33,14 +60,6 @@
         });
         tileLayer.addTo(map);
 // -------------------------------------------------------------------------------------------------
-        const JRC = L.icon({
-            iconUrl: "../static/images/jrc.png",
-            iconSize: [32, 17]
-        });
-        const grico = L.icon({
-            iconUrl: "../static/images/grico.png",
-            iconSize: [32, 49]
-        });
         const woman = L.icon({
             iconUrl: "../static/images/woman.gif",
             iconSize: [64, 64]
@@ -48,44 +67,34 @@
         const marker = L.marker(baseLatLng, {icon: woman});
         marker.addTo(map);
 // -------------------------------------------------------------------------------------------------
-//        let nodeList = [];
-//        const node = JSON.parse('{{ node|safe }}');
-//        console.log(place);
-//        for(let name in node){
-//            let lat = node[name].lat
-//            let lng = node[name].lng
-//            console.log(name,lat, lng);
-//            let mmm = L.marker([lat, lng], {icon: JRC});
-//            mmm.addTo(map);
-//            nodeList.push(mmm);
-//        }
-//        console.log(nodeList);
-// -------------------------------------------------------------------------------------------------
-// -------------------------------------------------------------------------------------------------
-// -------------------------------------------------------------------------------------------------
         let vessel = {};
+        const enigma = L.icon({iconUrl: '../static/imgs/notEnter.png'});
+        const zerolatlng = L.latLng(0, 0);
+        const wsURL = 'ws://localhost:80/ws';
 
         jQuery.ajax({
             url: 'shiplist',
             type: 'GET',
             dataType: 'json',
         }).done(function (data) {
-            for(let k in data){
-                let item = data[k];
-                const icon = item.body['aisType']==5? '../static/imgs/kaniS.png': '../static/imgs/kameS.png'
-
+            for (let k in data) {
+                let item = data[k]; //console.log(item);
+                let img = item.body['aisType'] === 5 ? '../static/imgs/kaniS.png' : '../static/imgs/kameS.png';
+                const icon = L.icon({iconUrl: img});
+                const marker = L.marker(zerolatlng, {icon: icon});
                 vessel[k] = {
                     'at': item.at,
                     'body': item.body,
-                    'icon': L.icon({'iconUrl': '../static/imgs/kaniS.png'}),
-                    'marker': null,
-                    'latlng': L.latLng(0, 0),
+                    'icon': icon,
+                    'marker': marker,
+                    // 'marker': null,
+                    'latlng': zerolatlng,
+                    'show': false,
                 }
+                ship[k] = new Ship(item.body['name'], item.body['aisType']);
             }
         });
 
-        const enigma = L.icon({iconUrl: '../static/imgs/notEnter.png'});
-        const wsURL = 'ws://localhost:80/ws';
         let ws = new WebSocket(wsURL);
         ws.onopen = function (e) {
             console.log(e);
@@ -95,57 +104,62 @@
             const mmsi = data['mmsi'];
             switch (data['type']) {
                 case 'retire':
-                    if(mmsi in vessel){
-                        delete(vessel[mmsi]);
-                        delete(vessel[mmsi]);
+                    if (mmsi in vessel) {
+                        const home = vessel[mmsi];
+                        // console.log(home);
+                        if (home['show']) {  //console.log('$$$ remove '+ home);
+                            map.removeLayer(home['marker']);
+                        }
+                        delete (home);
                         console.log('--- ' + mmsi + ' was expired');
+                    }
+                    if (mmsi in ship) {
+                        const home = ship[mmsi];
+                        delete (home);
                     }
                     break;
                 case 'debut':
                     const body = data['body']; //console.log(body);
-                    const icon = body['aisType']==5? '../static/imgs/kaniS.png': '../static/imgs/kameS.png'
+                    let img = body['aisType'] == 5 ? '../static/imgs/kaniS.png' : '../static/imgs/kameS.png';
+                    const icon = L.icon({iconUrl: img});
+                    const marker = L.marker(zerolatlng, {icon: icon});
                     vessel[mmsi] = {
                         'at': new Date(),
                         'body': body,
-                        'icon': L.icon({'iconUrl': icon}),
-                        'marker': null,
-                        'latlng': L.latLng(0, 0),
+                        'icon': icon,
+                        'latlng': zerolatlng,
+                        'marker': marker,
+                        'show': false,
                     }
                     console.log('+++ ' + mmsi + ' was debut');
                     // console.log(vessel);
+
+                    ship[mmsi] = new Ship(body['name'], body['aisType']);
+
                     break;
                 case 'live':
                     const location = data['body'];
                     const latlng = L.latLng(location['lat'], location['lon']);
                     if (mmsi in vessel) {
                         const home = vessel[mmsi];
-                        if (home.marker) {
-                            if (location['hv']) {
-                                const angle = location['hdg'];
-                                home.marker.setRotationAngle(angle);
-                            }
-                            if(location['sog'] < 3){
-                                home.marker.setOpacity(0.5);
-                            }
-                            else{
-                                home.marker.setOpacity(1.0);
-                            }
-                            home.marker.setLatLng(latlng);
-                            // console.log('*** live ' + mmsi);
-                        } else {
-                            home.marker = L.marker(latlng, {icon: home.icon});
-                            if (location['hv']) {
-                                const angle = location['hdg'];
-                                home.marker.setRotationAngle(angle);
-                            }
-                            home.marker.setOpacity(0.5);
+                        if (home.show == false) {
                             home.marker.addTo(map);
-                            // console.log('>>> live ' + mmsi);
+                            home.show = true;
                         }
+                        if (location['hv']) {
+                            const angle = location['hdg'];
+                            home.marker.setRotationAngle(angle);
+                        }
+                        home.marker.setOpacity(location['sog'] < 2 ? 0.5 : 1.0);
+                        home.marker.setLatLng(latlng);
                         home.latlng = latlng;
                         // console.log(home);
-                    } else {
-                        // L.marker([location['lat'], location['lon']], {icon: enigma}).addTo(map);
+                    }
+                    if(mmsi in ship){
+                        const home = ship[mmsi];
+                        home.location.lat = location['lat'];
+                        home.location.lon = location['lon'];
+                        // console.log(home);
                     }
                     break;
                 default:

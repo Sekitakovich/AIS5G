@@ -226,15 +226,18 @@ class Collector(Thread):
         return vessel
 
     def cleanup(self):
-        timeout = 10 * 60
-        interval = 10
+        timeout = 8 * 60
+        interval = 1
         top = dt.now()
+        last = 0
         while True:
             time.sleep(interval)
             with self.locker:
                 current = len(self.vessel)
-                passed = (dt.now() - top).total_seconds()
-                logger.info('=== holds %d entries after %d secs' % (current, passed))
+                if current > last:
+                    passed = (dt.now() - top).total_seconds()
+                    logger.info('=== holds %d entries after %d secs' % (current, passed))
+                    last = current
                 void: Dict[int, str] = {}
                 for k, v in self.vessel.items():
                     secs = (dt.now() - v.at).total_seconds()
@@ -298,6 +301,8 @@ class Collector(Thread):
                     'at': now.strftime(self.tsFormat),
                     'body': asdict(Running(lat=lat, lon=lon, sog=sog, hdg=hdg, sv=sv, hv=hv))
                 }
+                # if header.type == 18:
+                #     print(info)
                 self.infoQue.put(info)
 
 class Main(responder.API):
