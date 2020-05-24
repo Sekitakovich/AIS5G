@@ -178,11 +178,6 @@ class Profeel(object):
     callsign: str
 
 @dataclass()
-class Vessel(object):
-    at: dt
-    profeel: Profeel
-
-@dataclass()
 class Running(object):
     # at: dt
     lon: float = 0.0
@@ -191,6 +186,11 @@ class Running(object):
     hdg: int = 0
     sv: bool = True
     hv: bool = True
+
+@dataclass()
+class Vessel(object):
+    at: dt
+    profeel: Profeel
 
 
 class Collector(Thread):
