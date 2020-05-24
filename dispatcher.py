@@ -129,7 +129,7 @@ class Dispatcher(object):
             elif thisType == 20:
                 s = self.type20.parse(payload=payload)
                 result.body = s
-                print('Type[%d] = %s' % (thisType, s))
+                # print('Type[%d] = %s' % (thisType, s))
 
             elif thisType == 21:
                 s = self.type21.parse(payload=payload)

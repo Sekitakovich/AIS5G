@@ -1,4 +1,3 @@
-from contextlib import closing
 import sqlite3
 from functools import reduce
 from operator import xor
@@ -7,13 +6,14 @@ from threading import Thread
 import queue
 from serial import Serial
 from contextlib import closing
+import socket
 
 from dispatcher import Dispatcher, Result
 
 
 class NMEA(object):
 
-    def __init__(self, *, portname: str = '', baudrate: int = 0):
+    def __init__(self, *, serialPort: str = '', baudrate: int = 0, mcip: str = '', mcport: int = 0):
 
         self.fragment = []
         self.seq = 0
@@ -26,15 +26,40 @@ class NMEA(object):
         self.w = Thread(target=self.welcome, daemon=True)
         self.w.start()
 
-        if portname:
-            self.portname = portname
+        if serialPort:
+            logger.debug('+++ use Serial')
+            self.serialPort = serialPort
             self.baudrate = baudrate
-            self.s = Thread(target=self.listner, daemon=True)
+            self.s = Thread(target=self.fromSerial, daemon=True)
             self.s.start()
 
-    def listner(self):
+        if mcip:
+            logger.debug('+++ use UDP(multicast)')
+            self.mcip = mcip
+            self.mcport = mcport
+            self.u = Thread(target=self.fromUDP, daemon=True)
+            self.u.start()
+
+    def fromUDP(self):
+        bufferSize = 4096
+        run = True
         try:
-            with closing(Serial(self.portname, baudrate=self.baudrate)) as sp:
+            with closing(socket.socket(socket.AF_INET, socket.SOCK_DGRAM)) as sock:
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP,
+                                socket.inet_aton(self.mcip) + socket.inet_aton('0.0.0.0'))
+                sock.bind(('', self.mcport))
+
+                while run:
+                    udpPacket, ipv4 = sock.recvfrom(bufferSize)
+                    self.quePoint.put(udpPacket)
+        except socket.error as e:
+            run = False
+            logger.critical(e)
+
+    def fromSerial(self):
+        try:
+            with closing(Serial(self.serialPort, baudrate=self.baudrate)) as sp:
                 while True:
                     data = sp.readline()
                     self.quePoint.put(data)
@@ -71,32 +96,34 @@ class NMEA(object):
                 calc = 0
             if csum == calc:
                 item = main.split(b',')
-                all = int(item[1])
-                now = int(item[2])
-                channel = item[4]  # Don't care
-                body = item[5]
+                if item[0][-3:] == b'VDM':
+                    all = int(item[1])
+                    now = int(item[2])
+                    channel = item[4]  # Don't care
+                    body = item[5]
 
-                if all > 1:  # fragment
-                    seq = int(item[3])
-                    if now == 1:
-                        self.seq = seq
+                    if all > 1:  # fragment
+                        seq = int(item[3])
+                        if now == 1:
+                            self.seq = seq
 
-                    if seq == self.seq:
-                        self.fragment.append(body)
-                        if all == now:
-                            payload = b''.join(self.fragment)
-                            self.fragment.clear()
-                            self.seq = 0
-                            self.parse(payload=payload)
+                        if seq == self.seq:
+                            self.fragment.append(body)
+                            if all == now:
+                                payload = b''.join(self.fragment)
+                                self.fragment.clear()
+                                self.seq = 0
+                                self.parse(payload=payload)
+                            else:
+                                pass
                         else:
-                            pass
+                            self.seq = 0
+                            self.fragment.clear()
+                            raise ValueError('Fragment sequence mismatch')
                     else:
-                        self.seq = 0
-                        self.fragment.clear()
-                        raise ValueError('Fragment sequence mismatch')
+                        self.parse(payload=body)
                 else:
-                    self.parse(payload=body)
-
+                    pass
             else:
                 raise ValueError('Checksum mismatch')
 
@@ -110,7 +137,7 @@ class NMEA(object):
 
 if __name__ == '__main__':
 
-    collector = NMEA()
+    collector = NMEA(mcip='239.192.0.1', mcport=60001)
 
     db = [
         # './Emulator/singapore-20171031.db',  # 使い物にならない
