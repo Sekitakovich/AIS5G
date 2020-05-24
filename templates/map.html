@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script type="text/javascript" src="../static/jquery-3.5.0.min.js"></script>
+    <link rel="stylesheet" href="../static/leaflet/leaflet.css">
+    <script type="text/javascript" src="../static/leaflet/leaflet.js"></script>
+    <script type="text/javascript" src="../static/js/leaflet.rotatedMarker.js"></script>
+    <script type="text/javascript" src="../static/Leaflet.MovingMarker-master/MovingMarker.js"></script>
+    <style>
+        .map {
+            width: 1024px;
+            height: 768px;
+        }
+    </style>
+</head>
+<body>
+<div id="map" class="map"></div>
+<script type="text/javascript">
+    jQuery(document).ready(function () {
+        console.log('start');
+
+// -------------------------------------------------------------------------------------------------
+        const baseLatLng = [1.2893833333333333, 103.99735];
+// -------------------------------------------------------------------------------------------------
+        const map = L.map('map');
+        map.setView(baseLatLng, 13);
+// -------------------------------------------------------------------------------------------------
+        const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+//            attribution: '© <a href="http://osm.org/copyright">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
+            maxZoom: 19,
+        });
+        tileLayer.addTo(map);
+// -------------------------------------------------------------------------------------------------
+        const JRC = L.icon({
+            iconUrl: "../static/images/jrc.png",
+            iconSize: [32, 17]
+        });
+        const grico = L.icon({
+            iconUrl: "../static/images/grico.png",
+            iconSize: [32, 49]
+        });
+        const woman = L.icon({
+            iconUrl: "../static/images/woman.gif",
+            iconSize: [64, 64]
+        });
+        const marker = L.marker(baseLatLng, {icon: woman});
+        marker.addTo(map);
+// -------------------------------------------------------------------------------------------------
+//        let nodeList = [];
+//        const node = JSON.parse('{{ node|safe }}');
+//        console.log(place);
+//        for(let name in node){
+//            let lat = node[name].lat
+//            let lng = node[name].lng
+//            console.log(name,lat, lng);
+//            let mmm = L.marker([lat, lng], {icon: JRC});
+//            mmm.addTo(map);
+//            nodeList.push(mmm);
+//        }
+//        console.log(nodeList);
+// -------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
+        let vessel = {};
+
+        jQuery.ajax({
+            url: 'shiplist',
+            type: 'GET',
+            dataType: 'json',
+        }).done(function (data) {
+            for(let k in data){
+                let item = data[k];
+                const icon = item.body['aisType']==5? '../static/imgs/kaniS.png': '../static/imgs/kameS.png'
+
+                vessel[k] = {
+                    'at': item.at,
+                    'body': item.body,
+                    'icon': L.icon({'iconUrl': '../static/imgs/kaniS.png'}),
+                    'marker': null,
+                    'latlng': L.latLng(0, 0),
+                }
+            }
+        });
+
+        const enigma = L.icon({iconUrl: '../static/imgs/notEnter.png'});
+        const wsURL = 'ws://localhost:80/ws';
+        let ws = new WebSocket(wsURL);
+        ws.onopen = function (e) {
+            console.log(e);
+        }
+        ws.onmessage = function (message) {
+            const data = JSON.parse(message.data);
+            const mmsi = data['mmsi'];
+            switch (data['type']) {
+                case 'debut':
+                    const body = data['body']; //console.log(body);
+                    const icon = body['aisType']==5? '../static/imgs/kaniS.png': '../static/imgs/kameS.png'
+                    vessel[mmsi] = {
+                        'at': new Date(),
+                        'body': body,
+                        'icon': L.icon({'iconUrl': icon}),
+                        'marker': null,
+                        'latlng': L.latLng(0, 0),
+                    }
+                    console.log('+++ ' + mmsi + ' was debut');
+                    // console.log(vessel);
+                    break;
+                case 'live':
+                    const location = data['body'];
+                    const latlng = L.latLng(location['lat'], location['lon']);
+                    if (mmsi in vessel) {
+                        const home = vessel[mmsi];
+                        if (home.marker) {
+                            if (location['hv']) {
+                                const angle = location['hdg'];
+                                home.marker.setRotationAngle(angle);
+                            }
+                            if(location['sog'] < 3){
+                                home.marker.setOpacity(0.5);
+                            }
+                            else{
+                                home.marker.setOpacity(1.0);
+                            }
+                            home.marker.setLatLng(latlng);
+                            console.log('*** live ' + mmsi);
+                        } else {
+                            home.marker = L.marker(latlng, {icon: home.icon});
+                            if (location['hv']) {
+                                const angle = location['hdg'];
+                                home.marker.setRotationAngle(angle);
+                            }
+                            home.marker.setOpacity(0.5);
+                            home.marker.addTo(map);
+                            console.log('>>> live ' + mmsi);
+                        }
+                        home.latlng = latlng;
+                        // console.log(home);
+                    } else {
+                        // L.marker([location['lat'], location['lon']], {icon: enigma}).addTo(map);
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+    });
+</script>
+</body>
+</html>
