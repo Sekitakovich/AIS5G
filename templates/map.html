@@ -94,6 +94,13 @@
             const data = JSON.parse(message.data);
             const mmsi = data['mmsi'];
             switch (data['type']) {
+                case 'retire':
+                    if(mmsi in vessel){
+                        delete(vessel[mmsi]);
+                        delete(vessel[mmsi]);
+                        console.log('--- ' + mmsi + ' was expired');
+                    }
+                    break;
                 case 'debut':
                     const body = data['body']; //console.log(body);
                     const icon = body['aisType']==5? '../static/imgs/kaniS.png': '../static/imgs/kameS.png'
@@ -124,7 +131,7 @@
                                 home.marker.setOpacity(1.0);
                             }
                             home.marker.setLatLng(latlng);
-                            console.log('*** live ' + mmsi);
+                            // console.log('*** live ' + mmsi);
                         } else {
                             home.marker = L.marker(latlng, {icon: home.icon});
                             if (location['hv']) {
@@ -133,7 +140,7 @@
                             }
                             home.marker.setOpacity(0.5);
                             home.marker.addTo(map);
-                            console.log('>>> live ' + mmsi);
+                            // console.log('>>> live ' + mmsi);
                         }
                         home.latlng = latlng;
                         // console.log(home);
