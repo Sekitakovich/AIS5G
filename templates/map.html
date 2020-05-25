@@ -49,10 +49,10 @@
         let ship = [];
 
 // -------------------------------------------------------------------------------------------------
-        const baseLatLng = [1.2893833333333333, 103.99735];
+        const baseLatLng = [1.236104, 103.835729];
 // -------------------------------------------------------------------------------------------------
         const map = L.map('map');
-        map.setView(baseLatLng, 13);
+        map.setView(baseLatLng, 14);
 // -------------------------------------------------------------------------------------------------
         const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 //            attribution: '© <a href="http://osm.org/copyright">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
@@ -78,20 +78,27 @@
             dataType: 'json',
         }).done(function (data) {
             for (let k in data) {
-                let item = data[k]; //console.log(item);
-                let img = item.body['aisType'] === 5 ? '../static/imgs/kaniS.png' : '../static/imgs/kameS.png';
+                const item = data[k]; //console.log(item);
+                const profeel = item.profeel;
+                const running = item.running;
+                const img = profeel['aisType'] === 5 ? '../static/imgs/kaniS.png' : '../static/imgs/kameS.png';
                 const icon = L.icon({iconUrl: img});
-                const marker = L.marker(zerolatlng, {icon: icon});
+                const latlng = running.valid? L.latLng(running.lat,running.lon): zerolatlng;
+                const marker = L.marker(latlng, {icon: icon});
                 vessel[k] = {
                     'at': item.at,
-                    'body': item.body,
+                    'body': profeel,
                     'icon': icon,
                     'marker': marker,
                     // 'marker': null,
-                    'latlng': zerolatlng,
+                    'latlng': latlng,
                     'show': false,
                 }
-                ship[k] = new Ship(item.body['name'], item.body['aisType']);
+                if(running.valid){
+                    marker.setOpacity(0.25);
+                    marker.addTo(map);
+                }
+                ship[k] = new Ship(profeel['name'], profeel['aisType']);
             }
         });
 

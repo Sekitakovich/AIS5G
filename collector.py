@@ -180,6 +180,7 @@ class Profeel(object):
 
 @dataclass()
 class Running(object):
+    valid: bool = True
     lon: float = 0.0
     lat: float = 0.0
     sog: float = 0.0
@@ -191,13 +192,15 @@ class Running(object):
 class Vessel(object):
     at: dt
     profeel: Profeel
-    running: Running = Running()
+    running: Running = Running(valid=False)
 
 
 class Collector(Thread):
     def __init__(self, *, infoQueue: queue.Queue):
         super().__init__()
         self.daemon = True
+
+        self.lifespan: int = 15
 
         self.infoQue = infoQueue
         self.tsFormat = '%Y-%m-%d %H:%M:%S'
@@ -247,13 +250,14 @@ class Collector(Thread):
         with self.locker:
             for k, v in self.vessel.items():
                 vessel[k] = {
-                    'body': asdict(v.profeel),
-                    'at': v.at.strftime(self.tsFormat)
+                    'profeel': asdict(v.profeel),
+                    'at': v.at.strftime(self.tsFormat),
+                    'running': asdict(v.running),
                 }
         return vessel
 
     def cleanup(self):  # お掃除屋さん
-        timeout = 8 * 60
+        timeout = self.lifespan * 60
         interval = 1
         top = dt.now()
         last = 0
@@ -327,6 +331,7 @@ class Collector(Thread):
                     if mmsi in self.vessel.keys():
                         last = self.vessel[mmsi].running
                         hdg = GISLib.calcHeadingWithF(latS=last.lat, lonS=last.lon, latE=lat, lonE=lon)
+                        pass
                     else:
                         hdg = 0
                         hv = False
