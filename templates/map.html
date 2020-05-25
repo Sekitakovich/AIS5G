@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="../static/leaflet/leaflet.css">
     <script type="text/javascript" src="../static/leaflet/leaflet.js"></script>
     <script type="text/javascript" src="../static/js/leaflet.rotatedMarker.js"></script>
-    <script type="text/javascript" src="../static/Leaflet.AnimatedMarker-master/src/AnimatedMarker.js"></script>
+    <script type="text/javascript" src="../static/js/bouncemarker.js"></script>
     <style>
         .map {
             width: 1024px;
@@ -83,7 +83,7 @@
                 const running = item.running;
                 const img = profeel['aisType'] === 5 ? '../static/imgs/kaniS.png' : '../static/imgs/kameS.png';
                 const icon = L.icon({iconUrl: img});
-                const latlng = running.valid? L.latLng(running.lat,running.lon): zerolatlng;
+                const latlng = running.valid ? L.latLng(running.lat, running.lon) : zerolatlng;
                 const marker = L.marker(latlng, {icon: icon});
                 vessel[k] = {
                     'at': item.at,
@@ -94,7 +94,7 @@
                     'latlng': latlng,
                     'show': false,
                 }
-                if(running.valid){
+                if (running.valid) {
                     marker.setOpacity(0.25);
                     marker.addTo(map);
                 }
@@ -127,9 +127,16 @@
                     break;
                 case 'debut':
                     const body = data['body']; //console.log(body);
-                    let img = body['aisType'] == 5 ? '../static/imgs/kaniS.png' : '../static/imgs/kameS.png';
+                    let img = body['aisType'] === 5 ? '../static/imgs/kaniS.png' : '../static/imgs/kameS.png';
                     const icon = L.icon({iconUrl: img});
-                    const marker = L.marker(zerolatlng, {icon: icon});
+                    const marker = L.marker(zerolatlng, {
+                        icon: icon,
+                        bounceOnAdd: false,
+                        bounceOnAddOptions: {duration: 500, height: 100, loop: 1},
+                        bounceOnAddCallback: function () {
+                            // console.log("done");
+                        }
+                    });
                     vessel[mmsi] = {
                         'at': new Date(),
                         'body': body,
@@ -149,8 +156,9 @@
                     const latlng = L.latLng(location['lat'], location['lon']);
                     if (mmsi in vessel) {
                         const home = vessel[mmsi];
-                        if (home.show == false) {
+                        if (home.show === false) {
                             home.marker.addTo(map);
+                            home.marker.bounce({duration: 1000, height: 100});
                             home.show = true;
                         }
                         if (location['hv']) {
@@ -162,7 +170,7 @@
                         home.latlng = latlng;
                         // console.log(home);
                     }
-                    if(mmsi in ship){
+                    if (mmsi in ship) {
                         const home = ship[mmsi];
                         home.location.lat = location['lat'];
                         home.location.lon = location['lon'];
