@@ -17,6 +17,7 @@ import responder
 from dispatcher import Dispatcher, Result
 from websocketServer import WebsocketServer
 from map import Map
+from gis import GISLib
 
 
 class fromUDP(Process):
@@ -179,7 +180,6 @@ class Profeel(object):
 
 @dataclass()
 class Running(object):
-    # at: dt
     lon: float = 0.0
     lat: float = 0.0
     sog: float = 0.0
@@ -191,6 +191,7 @@ class Running(object):
 class Vessel(object):
     at: dt
     profeel: Profeel
+    running: Running = Running()
 
 
 class Collector(Thread):
@@ -205,8 +206,9 @@ class Collector(Thread):
         self.receiver = Receiver(mcip='239.192.0.1', mcport=60001, outQueue=self.qp)
 
         self.vessel: Dict[int, Vessel] = {}
-        self.locker = Lock()
+        self.orphan: Dict[int, Running] = {}
 
+        self.locker = Lock()
         self.t = Thread(target=self.cleanup, daemon=True)
 
     def run(self) -> None:
@@ -214,6 +216,24 @@ class Collector(Thread):
         while True:
             data: Result = self.qp.get()
             self.entry(data=data)
+
+    def sendProfeel(self, *, mmsi: int, profeel: Profeel):
+        info: Dict[str, any] = {
+            'type': 'debut',
+            'mmsi': mmsi,
+            'body': asdict(profeel),
+            'at': dt.now().strftime(self.tsFormat)
+        }
+        self.infoQue.put(info)
+
+    def sendRunning(self, *, mmsi: int, running: Running):
+        info: Dict[str, any] = {
+            'type': 'live',
+            'mmsi': mmsi,
+            'at': dt.now().strftime(self.tsFormat),
+            'body': asdict(running)
+        }
+        self.infoQue.put(info)
 
     def listUP(self) -> Dict[int, dict]:
         vessel: Dict[int, dict] = {}
@@ -269,14 +289,12 @@ class Collector(Thread):
                     logger.debug('+++ append %d (%s)' % (mmsi, name))
                     profeel = Profeel(name=name, imo=imo, callsign=callsign, aisType=header.type, shipType=shiptype)
                     self.vessel[mmsi] = Vessel(profeel=profeel, at=dt.now())
-                    info: Dict[str, any] = {
-                        'type': 'debut',
-                        'mmsi': mmsi,
-                        'body': asdict(profeel),
-                        'at': now.strftime(self.tsFormat)
-                    }
-                    self.infoQue.put(info)
-                    # print(info)
+                    self.sendProfeel(mmsi=mmsi, profeel=profeel)
+                    if mmsi in self.orphan.keys():
+                        running = self.orphan[mmsi]
+                        self.vessel[mmsi].running = running
+                        self.sendRunning(mmsi=mmsi, running=running)
+                        del(self.orphan[mmsi])
                 else:
                     secs = (now - self.vessel[mmsi].at).total_seconds()
                     self.vessel[mmsi].at = now
@@ -289,21 +307,33 @@ class Collector(Thread):
                     self.infoQue.put(info)
 
             elif header.type in [1, 2, 3, 18]:
-                lat = float(body['lat'] / 600000)
-                lon = float(body['lon'] / 600000)
+                degLat = int(body['lat'])
+                degLon = int(body['lon'])
+                lat = float(degLat / 600000)
+                lon = float(degLon / 600000)
                 sog = float(body['speed'])
                 sv = False if sog == 1023 else True
-                hdg = int(body['heading'])
-                hv = False if hdg == 511 else True
-                info: Dict[str, any] = {
-                    'type': 'live',
-                    'mmsi': mmsi,
-                    'at': now.strftime(self.tsFormat),
-                    'body': asdict(Running(lat=lat, lon=lon, sog=sog, hdg=hdg, sv=sv, hv=hv))
-                }
-                # if header.type == 18:
-                #     print(info)
-                self.infoQue.put(info)
+                angle = int(body['heading'])
+                hv = True
+                if angle == 511:
+                    if mmsi in self.vessel.keys():
+                        last = self.vessel[mmsi].running
+                        hdg = GISLib.calcHeadingWithF(latS=last.lat, lonS=last.lon, latE=lat, lonE=lon)
+                    else:
+                        hdg = 0
+                        hv = False
+                else:
+                    hdg = angle
+
+                running = Running(lat=lat, lon=lon, sog=sog, hdg=hdg, sv=sv, hv=hv)
+
+                if mmsi in self.vessel:
+                    target = self.vessel[mmsi]
+                    target.running = running
+                else:
+                    self.orphan[mmsi] = running
+                self.sendRunning(mmsi=mmsi, running=running)
+
 
 class Main(responder.API):
     def __init__(self):

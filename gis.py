@@ -4,14 +4,34 @@ from dataclasses import dataclass
 from typing import List
 
 
-@dataclass()
-class Location(object):
-    lat: float
-    lng: float
-    name: str
+class GISLib(object):
+
+    @classmethod
+    def calcHeading(cls, *, latS: int, latE: int, lonS: int, lonE: int) -> int:
+        radian = math.atan2(latE - latS, lonE - lonS)
+        degree = math.degrees(radian)
+
+        angle = int(180 - (degree + 90))
+        heading = angle if angle >= 0 else 360 + angle
+
+        return heading
+    @classmethod
+    def calcHeadingWithF(cls, *, latS: float, latE: float, lonS: float, lonE: float) -> int:
+        return cls.calcHeading(
+            latS=int(latS*60000),
+            latE=int(latE*60000),
+            lonS=int(lonS*60000),
+            lonE=int(lonE*60000))
 
 
 if __name__ == '__main__':
+
+    @dataclass()
+    class Location(object):
+        lat: float
+        lng: float
+        name: str
+
 
     top = Location(lat=35.602192, lng=139.367282, name='京王多摩境駅')
 
@@ -91,12 +111,8 @@ if __name__ == '__main__':
     ]
 
     for e in end:
-        radian = math.atan2(e.lat - top.lat, e.lng - top.lng)
-        degree = math.degrees(radian)
-
-        ooo = int(180 - (degree + 90))
-
-        logger.debug('%s: radian = %f degree = %f -> %d' % (e.name, radian, degree, ooo))
+        heading = GISLib.calcHeadingWithF(latS=top.lat, latE=e.lat, lonS=top.lng, lonE=e.lng)
+        logger.debug('%s = %d' % (e.name, heading))
 
 # 東神奈川,35.477951,139.633347
 # 大口,35.492164,139.646157
