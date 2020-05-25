@@ -235,6 +235,13 @@ class Collector(Thread):
         }
         self.infoQue.put(info)
 
+    def sendVoid(self, *, mmsi: List[int]):
+        info: Dict[str, any] = {
+            'type': 'retire',
+            'mmsi': mmsi,
+        }
+        self.infoQue.put(info)
+
     def listUP(self) -> Dict[int, dict]:
         vessel: Dict[int, dict] = {}
         with self.locker:
@@ -245,7 +252,7 @@ class Collector(Thread):
                 }
         return vessel
 
-    def cleanup(self):
+    def cleanup(self):  # お掃除屋さん
         timeout = 8 * 60
         interval = 1
         top = dt.now()
@@ -263,6 +270,7 @@ class Collector(Thread):
                     secs = (dt.now() - v.at).total_seconds()
                     if secs >= timeout:
                         void[k] = v.profeel.name
+                # self.sendVoid(mmsi=void.keys())
                 for k, v in void.items():
                     del (self.vessel[k])
                     info: Dict[str, any] = {
