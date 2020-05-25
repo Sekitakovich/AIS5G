@@ -15,13 +15,16 @@ class GISLib(object):
         heading = angle if angle >= 0 else 360 + angle
 
         return heading
+
     @classmethod
     def calcHeadingWithF(cls, *, latS: float, latE: float, lonS: float, lonE: float) -> int:
-        return cls.calcHeading(
-            latS=int(latS*60000),
-            latE=int(latE*60000),
-            lonS=int(lonS*60000),
-            lonE=int(lonE*60000))
+        radian = math.atan2(latE - latS, lonE - lonS)
+        degree = math.degrees(radian)
+
+        angle = int(180 - (degree + 90))
+        heading = angle if angle >= 0 else 360 + angle
+
+        return heading
 
 
 if __name__ == '__main__':
