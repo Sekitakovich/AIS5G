@@ -16,9 +16,3 @@ class Member(object):
     profeel: List[Profeel] = field(default_factory=list)
 
 
-member = Member(number=1, profeel=)
-
-print(member)
-
-j = member.to_json(indent=2)
-print(j)

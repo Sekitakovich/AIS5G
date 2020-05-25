@@ -379,6 +379,7 @@ class Main(responder.API):
             # print(info)
             self.ws.bc(message=json.dumps(info))
 
+
 if __name__ == '__main__':
 
     main = Main()
