@@ -1,35 +1,65 @@
+from loguru import logger
 import math
-from pyproj import Geod
+from dataclasses import dataclass
+from typing import List
 
-p1_latitude = 35.3524
-p1_longitude = 135.0302
 
-# 飛行物体は緯度(obj_latitude)、経度(obj_longitude)、高度(obj_altitude)のところにある
-obj_latitude = 35.3532
-obj_longitude = 135.0305
-obj_altitude = 1000 # 単位は(m)
+@dataclass()
+class Location(object):
+    lat: float
+    lng: float
+    name: str
 
-# ellpsは赤道半径。GPSはWGS84を使っている。距離は6,378,137m
-g = Geod(ellps='WGS84')
 
-# inv() method
-# 引数は inv(p1の経度, p1の緯度, 対象の経度, 対象の緯度, radians=False)
-# radiansで出力が変わる。無し、またはFalseでDegree、Trueを入れればRadianで出力される
-# 戻り値は方位角(azimuth)、反方位角(back_azimuth)、距離(distance_2d)の順番
-# azimuth, back_azimuth, distance_2d = g.inv(p1_longitude, p1_latitude, obj_longitude, obj_latitude)
+if __name__ == '__main__':
 
-# 必要なものだけ欲しいなら以下でも可
-result = g.inv(p1_longitude, p1_latitude, obj_longitude, obj_latitude)
-# azimuth = result[0]
-# back_azimuth = result[1]
-distance_2d = result[2]
+    top = Location(lat=35.602192, lng=139.367282, name='京王多摩境駅')
 
-# inv()で求めた距離が分かれば、GPSの高度と合わせて仰角(elevation)が分かる
-# math.degrees()はmath.atan2()の戻り値がRadianなので、Degree(°)に変換している。
-elevation = math.degrees(math.atan2(obj_altitude, distance_2d))
+    end: List[Location] = [
+        Location(name='京王多摩センター駅', lat=35.625496, lng=139.424912),
+        Location(name='京王橋本駅', lat=35.595134, lng=139.344944),
+        Location(name='JR八王子駅', lat=35.656592, lng=139.338960),
+        Location(name='小田急町田駅', lat=35.542007, lng=139.445468),
+    ]
 
-# 飛行物体までの直線距離(distance_3d)はmathを使ってピタゴラスの定理
-# math.pypotで求められる。
-# distance_3d = math.hypot(distance_2d, obj_altitude)
+    for e in end:
+        radian = math.atan2(e.lat - top.lat, e.lng - top.lng)
+        degree = math.degrees(radian)
 
-print('fin')
+        ooo = int(180 - (degree + 90))
+
+        logger.debug('%s: radian = %f degree = %f -> %d' % (e.name, radian, degree, ooo))
+
+# 東神奈川,35.477951,139.633347
+# 大口,35.492164,139.646157
+# 菊名,35.509817,139.63135
+# 新横浜,35.507456,139.617585
+# 小机,35.508553,139.600073
+# 鴨居,35.510874,139.567095
+# 中山,35.514834,139.540247
+# 十日市場,35.526302,139.516585
+# 長津田,35.531681,139.494686
+# 成瀬,35.535514,139.472909
+# 町田,35.542007,139.445468
+# 古淵,35.555988,139.419265
+# 淵野辺,35.568756,139.395058
+# 矢部,35.573069,139.386767
+# 相模原,35.581066,139.371001
+# 橋本,35.594942,139.34502
+# 相原,35.606865,139.331682
+# 八王子みなみ野,35.631364,139.330975
+# 片倉,35.639707,139.341432
+# 八王子,35.655641,139.338968
+
+# 調布,35.651889,139.544396
+# 京王多摩川,35.644804,139.537042
+# 京王稲田堤,35.633895,139.531099
+# 京王よみうりランド,35.632923,139.517347
+# 稲城,35.636216,139.50032
+# 若葉台,35.619278,139.4724
+# 京王永山,35.629808,139.448221
+# 京王多摩センター,35.624977,139.424737
+# 京王堀之内,35.624438,139.400314
+# 南大沢,35.614138,139.380072
+# 多摩境,35.601909,139.366985
+# 橋本,35.594942,139.34502
