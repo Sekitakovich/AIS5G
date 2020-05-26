@@ -49,10 +49,10 @@
         let ship = [];
 
 // -------------------------------------------------------------------------------------------------
-        const baseLatLng = [1.2893833333333333, 103.99735];
+        const baseLatLng = [1.236104, 103.835729];
 // -------------------------------------------------------------------------------------------------
         const map = L.map('map');
-        map.setView(baseLatLng, 13);
+        map.setView(baseLatLng, 14);
 // -------------------------------------------------------------------------------------------------
         const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 //            attribution: '© <a href="http://osm.org/copyright">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
@@ -78,20 +78,36 @@
             dataType: 'json',
         }).done(function (data) {
             for (let k in data) {
-                let item = data[k]; //console.log(item);
-                let img = item.body['aisType'] === 5 ? '../static/imgs/kaniS.png' : '../static/imgs/kameS.png';
+                const item = data[k]; //console.log(item);
+                const profeel = item.profeel;
+                const running = item.running;
+                const img = profeel['aisType'] === 5 ? '../static/imgs/kaniS.png' : '../static/imgs/kameS.png';
                 const icon = L.icon({iconUrl: img});
-                const marker = L.marker(zerolatlng, {icon: icon});
+                const latlng = running.valid ? L.latLng(running.lat, running.lon) : zerolatlng;
+                // const marker = L.marker(latlng, {icon: icon});
+                const marker = L.Marker.movingMarker(
+                    [latlng], [],
+                    {
+                        icon: icon,
+                        autostart: false,
+                        rotationAngle: 0,
+                        rotationOrigin: 'center center',
+                    }
+                );
                 vessel[k] = {
                     'at': item.at,
-                    'body': item.body,
+                    'body': profeel,
                     'icon': icon,
                     'marker': marker,
                     // 'marker': null,
-                    'latlng': zerolatlng,
+                    'latlng': latlng,
                     'show': false,
                 }
-                ship[k] = new Ship(item.body['name'], item.body['aisType']);
+                if (running.valid) {
+                    marker.setOpacity(0.25);
+                    marker.addTo(map);
+                }
+                ship[k] = new Ship(profeel['name'], profeel['aisType']);
             }
         });
 
@@ -106,7 +122,6 @@
                 case 'retire':
                     if (mmsi in vessel) {
                         const home = vessel[mmsi];
-                        // console.log(home);
                         if (home['show']) {  //console.log('$$$ remove '+ home);
                             map.removeLayer(home['marker']);
                         }
@@ -120,9 +135,25 @@
                     break;
                 case 'debut':
                     const body = data['body']; //console.log(body);
-                    let img = body['aisType'] == 5 ? '../static/imgs/kaniS.png' : '../static/imgs/kameS.png';
+                    let img = body['aisType'] === 5 ? '../static/imgs/kaniS.png' : '../static/imgs/kameS.png';
                     const icon = L.icon({iconUrl: img});
-                    const marker = L.marker(zerolatlng, {icon: icon});
+                    // const marker = L.marker(zerolatlng, {
+                    //     icon: icon,
+                    //     bounceOnAdd: false,
+                    //     bounceOnAddOptions: {duration: 500, height: 100, loop: 1},
+                    //     bounceOnAddCallback: function () {
+                    //         // console.log("done");
+                    //     }
+                    // });
+                    const marker = L.Marker.movingMarker(
+                        [[0, 0]], [],
+                        {
+                            icon: icon,
+                            autostart: false,
+                            rotationAngle: 0,
+                            rotationOrigin: 'center center',
+                        }
+                    );
                     vessel[mmsi] = {
                         'at': new Date(),
                         'body': body,
@@ -142,8 +173,9 @@
                     const latlng = L.latLng(location['lat'], location['lon']);
                     if (mmsi in vessel) {
                         const home = vessel[mmsi];
-                        if (home.show == false) {
+                        if (home.show === false) {
                             home.marker.addTo(map);
+                            // home.marker.bounce({duration: 1000, height: 100});
                             home.show = true;
                         }
                         if (location['hv']) {
@@ -151,11 +183,12 @@
                             home.marker.setRotationAngle(angle);
                         }
                         home.marker.setOpacity(location['sog'] < 2 ? 0.5 : 1.0);
-                        home.marker.setLatLng(latlng);
+                        // home.marker.setLatLng(latlng);
+                        home.marker.moveTo(latlng, 1000);
                         home.latlng = latlng;
                         // console.log(home);
                     }
-                    if(mmsi in ship){
+                    if (mmsi in ship) {
                         const home = ship[mmsi];
                         home.location.lat = location['lat'];
                         home.location.lon = location['lon'];

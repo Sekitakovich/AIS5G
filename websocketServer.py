@@ -23,11 +23,12 @@ class WebsocketServer(object):
     async def wsserver(self, ws: WebSocket):
         await ws.accept()
         key = ws.headers.get('sec-websocket-key')
-        self.clients[key] = ws
+        with self.locker:
+            self.clients[key] = ws
         if self.debug:
             logger.debug('+++ Websocket: hold %d clients' % (len(self.clients)))
-        if self.debug:
-            logger.debug('%s has come' % key)
+        # if self.debug:
+        #     logger.debug('%s has come' % key)
 
         while True:
             try:
@@ -47,7 +48,6 @@ class WebsocketServer(object):
                     logger.debug('[%s] from %s' % (msg, key))
 
     async def _broadcast(self, *, message: str):  # 念願叶う
-        # logger.debug('+++ broadcast to %d clients' % len(self.clients))
         for v in self.clients.values():
             await v.send_text(message)
 
