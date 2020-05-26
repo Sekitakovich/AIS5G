@@ -203,7 +203,7 @@ class Collector(Thread):
         super().__init__()
         self.daemon = True
 
-        self.lifespan: int = 3
+        self.holdMinutes: int = 15
 
         self.infoQue = infoQueue
         self.tsFormat = '%Y-%m-%d %H:%M:%S'
@@ -256,22 +256,22 @@ class Collector(Thread):
         vessel: Dict[int, dict] = {}
         with self.locker:
             for k, v in self.vessel.items():
-                vessel[k] = {
-                    'at': v.at.strftime(self.tsFormat),
-                    'profeel': asdict(v.profeel),
-                    'location': asdict(v.location),
-                }
+                if v.ready:
+                    vessel[k] = {
+                        'at': v.at.strftime(self.tsFormat),
+                        'profeel': asdict(v.profeel),
+                        'location': asdict(v.location),
+                    }
         return vessel
 
     def cleanup(self):  # お掃除屋さん
-        timeout = self.lifespan * 60
+        timeout = self.holdMinutes * 60
         interval = 5
         top = dt.now()
         last = 0
         while True:
             time.sleep(interval)
             with self.locker:
-                # current = len(self.vessel)
                 if self.entries > last:
                     passed = (dt.now() - top).total_seconds()
                     logger.info('=== holds %d entries after %d secs' % (self.entries, passed))
@@ -280,9 +280,8 @@ class Collector(Thread):
                 for k, v in self.vessel.items():
                     secs = (dt.now() - v.at).total_seconds()
                     if secs >= timeout:
-                        void[k] = v.profeel.name
+                        void[k] = v.profeel.name if v.pv else '???'
                         self.entries -= 1
-                # self.sendVoid(mmsi=void.keys())
                 for k, v in void.items():
                     del (self.vessel[k])
                     self.sendVoid(mmsi=k)
@@ -376,7 +375,7 @@ class Main(responder.API):
         Map
         '''
         self.map = Map(api=self)
-        self.add_route('/map', self.map.top)
+        self.add_route('/', self.map.top)
         self.add_route('/shiplist', self.shipList)
 
         self.run(address='0.0.0.0', port=80)
