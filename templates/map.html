@@ -122,7 +122,6 @@
                 case 'retire':
                     if (mmsi in vessel) {
                         const home = vessel[mmsi];
-                        // console.log(home);
                         if (home['show']) {  //console.log('$$$ remove '+ home);
                             map.removeLayer(home['marker']);
                         }
