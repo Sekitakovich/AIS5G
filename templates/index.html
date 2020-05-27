@@ -68,6 +68,11 @@
 
                 this.map = L.map('map');
                 this.map.setView(this.baseLatLng, 14);
+                this.map.on('click', function (e) {
+                    console.log(e);
+                    e.target.panTo(e.latlng);  // Wao!
+                    // e.target.wm.setLatLng(e.latlng);
+                });
 
                 this.tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     maxZoom: 19,
@@ -107,7 +112,7 @@
                         target.marker.moveTo(lonlat, duration);
                     }
                     else{
-                        target.marker.setLatLng(lonlat);
+                        // target.marker.setLatLng(lonlat);
                     }
                 }
             }
