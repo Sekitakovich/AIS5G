@@ -6,6 +6,7 @@
     <script type="text/javascript" src="../static/jquery-3.5.0.min.js"></script>
     <link rel="stylesheet" href="../static/leaflet/leaflet.css">
     <script type="text/javascript" src="../static/leaflet/leaflet.js"></script>
+    <script type="text/javascript" src="../static/leaflet-grayscale-master/TileLayer.Grayscale.js"></script>
     <script type="text/javascript" src="../static/js/leaflet.rotatedMarker.js"></script>
     <script type="text/javascript" src="../static/Leaflet.MovingMarker-master/MovingMarker.js"></script>
     <style>
@@ -61,6 +62,7 @@
 
         class Main {
             constructor() {
+                this.isWindowActive = true;
                 this.vessel = {};
                 this.baseLatLng = [1.236104, 103.835729];
 
@@ -100,7 +102,13 @@
                     const opacity = location.sog > 2 ? 1.0 : 0.5;
                     target.marker.setOpacity(opacity);
                     target.marker.setRotationAngle(location.hdg);
-                    target.marker.moveTo([location.lat, location.lon], duration);
+                    const lonlat = L.latLng(location.lat, location.lon);
+                    if(this.isWindowActive) {
+                        target.marker.moveTo(lonlat, duration);
+                    }
+                    else{
+                        target.marker.setLatLng(lonlat);
+                    }
                 }
             }
 
@@ -130,6 +138,16 @@
             }
         });
 // -------------------------------------------------------------------------------------------------
+
+        const w = jQuery(window);
+        w.on('focus', function (e) {
+            main.isWindowActive = true;
+            console.log('Active');
+        });
+        w.on('blur', function (e) {
+            main.isWindowActive = false;
+            console.log('not Active');
+        });
 
         let ws = new WebSocket('ws://localhost/ws');
         ws.onopen = function (e) {
