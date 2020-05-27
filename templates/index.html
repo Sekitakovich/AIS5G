@@ -71,8 +71,9 @@
                 this.map.setView(this.baseLatLng, 14);
                 this.map.on('click', function (e) {
                     console.log(e);
-                    e.target.panTo(e.latlng);  // Wao!
+                    this.panTo(e.latlng);  // Wao!
                     // e.target.wm.setLatLng(e.latlng);
+                    console.log(this);
                 });
 
                 this.tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
