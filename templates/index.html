@@ -10,6 +10,7 @@
     <script type="text/javascript" src="../static/js/leaflet.rotatedMarker.js"></script>
     <script type="text/javascript" src="../static/Leaflet.MovingMarker-master/MovingMarker.js"></script>
     <script type="text/javascript" src="../static/leaflet.bouncemarker-master/bouncemarker.js"></script>
+    <script type="text/javascript" src="../static/reconnecting-websocket-master/reconnecting-websocket.js"></script>
     <style>
         .map {
             width: 1024px;
@@ -159,7 +160,6 @@
         }
 
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
 // -------------------------------------------------------------------------------------------------
         const main = new Main();
 // -------------------------------------------------------------------------------------------------
@@ -188,10 +188,8 @@
             console.log('not Active');
         });
 
-        let ws = new WebSocket('ws://localhost/ws');
-        ws.onopen = function (e) {
-            console.log(e);
-        }
+        const wsURL = 'ws://' + location.host + '/ws'
+        const ws = new ReconnectingWebSocket(wsURL);
         ws.onmessage = function (message) {
             const data = JSON.parse(message.data);
             const mmsi = data.mmsi;
