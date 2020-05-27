@@ -9,10 +9,21 @@
     <script type="text/javascript" src="../static/leaflet-grayscale-master/TileLayer.Grayscale.js"></script>
     <script type="text/javascript" src="../static/js/leaflet.rotatedMarker.js"></script>
     <script type="text/javascript" src="../static/Leaflet.MovingMarker-master/MovingMarker.js"></script>
+    <script type="text/javascript" src="../static/leaflet.bouncemarker-master/bouncemarker.js"></script>
     <style>
         .map {
             width: 1024px;
             height: 768px;
+        }
+
+        @keyframes fade {
+            from {
+                opacity: 0.5;
+            }
+        }
+
+        .tako {
+            animation: fade 0.5s infinite alternate;
         }
     </style>
 </head>
@@ -21,6 +32,7 @@
 <script type="text/javascript">
     jQuery(document).ready(function () {
         console.log('start');
+
 // -------------------------------------------------------------------------------------------------
         class Profeel {
             constructor(name, callsign, imo, AISclass, shipType) {
@@ -41,6 +53,7 @@
                 this.sv = sv;
             }
         }
+
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         class Vessel {
             constructor(profeel, location, at) {
@@ -50,18 +63,27 @@
                 this.counter = 0;
 
                 const img = profeel.AISclass === 'A' ? '../static/imgs/kaniS.png' : '../static/imgs/kameS.png';
-                this.icon = L.icon({iconUrl: img});
+                this.icon = L.icon({
+                    iconUrl: img,
+                    // className: 'tako',
+                });
 
                 this.marker = L.Marker.movingMarker([[this.location.lat, this.location.lon]], [], {
                     icon: this.icon,
                     rotationAngle: 0,
+                    bounceOnAdd: true,
+                    bounceOnAddOptions: {
+                        height: 32,
+                        duration: 500,
+                        loop: 1,
+                    },
                 });
                 this.marker.setOpacity(0.25);
-                this.marker.bindPopup(this.profeel.name,{
-
-                });
+                this.marker.bindPopup(this.profeel.name, {});
+                this.marker.bindTooltip(this.profeel.name, {});
             }
         }
+
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         class Main {
             constructor() {
@@ -90,6 +112,7 @@
                 // this.wm = L.marker(this.baseLatLng, {icon: this.woman});
                 // this.wm.addTo(this.map);
             }
+
 // ---------------------------------------------------------------------
             append(mmsi, p, l, at) {
                 if (mmsi in this.vessel) {
@@ -103,6 +126,7 @@
                     console.log('+++ ' + mmsi + '(' + profeel.name + ')' + ' was debut');
                 }
             }
+
 // ---------------------------------------------------------------------
             move(mmsi, location) {
                 if (mmsi in this.vessel) {
@@ -113,15 +137,17 @@
                     target.marker.setOpacity(opacity);
                     target.marker.setRotationAngle(location.hdg);
                     const lonlat = L.latLng(location.lat, location.lon);
-                    if(this.isWindowActive) {
+                    if (this.isWindowActive) {
                         target.marker.moveTo(lonlat, duration);
+                        // target.marker.className = 'tako';
+                        // target.marker.bounce({duration: 100, height: 16, loop: 1});
                         // console.log(mmsi + ' ' + target.counter);
-                    }
-                    else{
+                    } else {
                         target.marker.setLatLng(lonlat);
                     }
                 }
             }
+
 // ---------------------------------------------------------------------
             expire(mmsi) {
                 if (mmsi in this.vessel) {
@@ -131,6 +157,7 @@
                 }
             }
         }
+
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 // -------------------------------------------------------------------------------------------------
