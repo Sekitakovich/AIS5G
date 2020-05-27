@@ -21,7 +21,6 @@
 <script type="text/javascript">
     jQuery(document).ready(function () {
         console.log('start');
-
 // -------------------------------------------------------------------------------------------------
         class Profeel {
             constructor(name, callsign, imo, AISclass, shipType) {
@@ -42,7 +41,7 @@
                 this.sv = sv;
             }
         }
-
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         class Vessel {
             constructor(profeel, location, at) {
                 this.at = at;
@@ -60,7 +59,7 @@
                 this.marker.setOpacity(0.25);
             }
         }
-
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         class Main {
             constructor() {
                 this.isWindowActive = true;
@@ -76,7 +75,7 @@
                     console.log(this);
                 });
 
-                this.tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                this.tileLayer = L.tileLayer.grayscale('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     maxZoom: 19,
                 });
                 this.tileLayer.addTo(this.map);
@@ -129,6 +128,7 @@
                 }
             }
         }
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 // -------------------------------------------------------------------------------------------------
         const main = new Main();
