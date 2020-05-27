@@ -87,8 +87,8 @@
                     const profeel = new Profeel(p.name, p.callsign, p.imo, p.AISclass, p.shipType);
                     const location = new Location(l.lon, l.lat, l.sog, l.hdg, l.sv);
                     const vessel = new Vessel(profeel, location, at);
-                    this.vessel[mmsi] = vessel;
                     vessel.marker.addTo(this.map);
+                    this.vessel[mmsi] = vessel;
                     console.log('+++ ' + mmsi + '(' + profeel.name + ')' + ' was debut');
                 }
             }
@@ -96,10 +96,11 @@
             move(mmsi, location) {
                 if (mmsi in this.vessel) {
                     const target = this.vessel[mmsi];
+                    const duration = target.profeel.AISclass === 'A' ? 500 : 1000;
                     const opacity = location.sog > 2 ? 1.0 : 0.5;
                     target.marker.setOpacity(opacity);
                     target.marker.setRotationAngle(location.hdg);
-                    target.marker.moveTo([location.lat, location.lon], 1000);
+                    target.marker.moveTo([location.lat, location.lon], duration);
                 }
             }
 
@@ -123,8 +124,9 @@
             // console.log(data);
             for (let k in data) {
                 const vessel = new Vessel(data[k].profeel, data[k].location, data[k].at);
-                main.vessel[k] = vessel;
-                vessel.marker.addTo(main.map);
+                // main.vessel[k] = vessel;
+                // vessel.marker.addTo(main.map);
+                main.append(k, data[k].profeel, data[k].location, data[k].at)
             }
         });
 // -------------------------------------------------------------------------------------------------

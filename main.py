@@ -272,7 +272,7 @@ class Collector(Thread):
         while True:
             time.sleep(interval)
             with self.locker:
-                if self.entries > last:
+                if self.entries != last:
                     passed = (dt.now() - top).total_seconds()
                     logger.info('=== holds %d entries after %d secs' % (self.entries, passed))
                     last = self.entries
