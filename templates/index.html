@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script type="text/javascript" src="../static/jquery-3.5.0.min.js"></script>
+    <link rel="stylesheet" href="../static/leaflet/leaflet.css">
+    <script type="text/javascript" src="../static/leaflet/leaflet.js"></script>
+    <script type="text/javascript" src="../static/leaflet-grayscale-master/TileLayer.Grayscale.js"></script>
+    <script type="text/javascript" src="../static/js/leaflet.rotatedMarker.js"></script>
+    <script type="text/javascript" src="../static/Leaflet.MovingMarker-master/MovingMarker.js"></script>
+    <style>
+        .map {
+            width: 1024px;
+            height: 768px;
+        }
+    </style>
+</head>
+<body>
+<div id="map" class="map"></div>
+<script type="text/javascript">
+    jQuery(document).ready(function () {
+        console.log('start');
+
+// -------------------------------------------------------------------------------------------------
+        class Profeel {
+            constructor(name, callsign, imo, AISclass, shipType) {
+                this.name = name;
+                this.callsign = callsign;
+                this.imo = parseInt(imo);
+                this.AISclass = AISclass;
+                this.shipType = shipType;
+            }
+        }
+
+        class Location {
+            constructor(lon, lat, sog, hdg, sv) {
+                this.lon = parseFloat(lon);
+                this.lat = parseFloat(lat);
+                this.sog = parseFloat(sog);
+                this.hdg = parseInt(hdg);
+                this.sv = sv;
+            }
+        }
+
+        class Vessel {
+            constructor(profeel, location, at) {
+                this.at = at;
+                this.profeel = profeel;
+                this.location = location;
+                this.counter = 0;
+
+                const img = profeel.AISclass === 'A' ? '../static/imgs/kaniS.png' : '../static/imgs/kameS.png';
+                this.icon = L.icon({iconUrl: img});
+
+                this.marker = L.Marker.movingMarker([[this.location.lat, this.location.lon]], [], {
+                    icon: this.icon,
+                    rotationAngle: 0,
+                });
+                this.marker.setOpacity(0.25);
+            }
+        }
+
+        class Main {
+            constructor() {
+                this.isWindowActive = true;
+                this.vessel = {};
+                this.baseLatLng = [1.236104, 103.835729];
+
+                this.map = L.map('map');
+                this.map.setView(this.baseLatLng, 14);
+                this.map.on('click', function (e) {
+                    console.log(e);
+                    this.panTo(e.latlng);  // Wao!
+                    // e.target.wm.setLatLng(e.latlng);
+                    console.log(this);
+                });
+
+                this.tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                });
+                this.tileLayer.addTo(this.map);
+
+                this.woman = L.icon({
+                    iconUrl: "../static/images/woman.gif",
+                    iconSize: [64, 64]
+                });
+                this.wm = L.marker(this.baseLatLng, {icon: this.woman});
+                this.wm.addTo(this.map);
+            }
+
+            append(mmsi, p, l, at) {
+                if (mmsi in this.vessel) {
+
+                } else {
+                    const profeel = new Profeel(p.name, p.callsign, p.imo, p.AISclass, p.shipType);
+                    const location = new Location(l.lon, l.lat, l.sog, l.hdg, l.sv);
+                    const vessel = new Vessel(profeel, location, at);
+                    vessel.marker.addTo(this.map);
+                    this.vessel[mmsi] = vessel;
+                    console.log('+++ ' + mmsi + '(' + profeel.name + ')' + ' was debut');
+                }
+            }
+
+            move(mmsi, location) {
+                if (mmsi in this.vessel) {
+                    const target = this.vessel[mmsi];
+                    target.counter++;
+                    const duration = target.profeel.AISclass === 'A' ? 500 : 1000;
+                    const opacity = location.sog > 2 ? 1.0 : 0.5;
+                    target.marker.setOpacity(opacity);
+                    target.marker.setRotationAngle(location.hdg);
+                    const lonlat = L.latLng(location.lat, location.lon);
+                    if(this.isWindowActive) {
+                        target.marker.moveTo(lonlat, duration);
+                        // console.log(mmsi + ' ' + target.counter);
+                    }
+                    else{
+                        // target.marker.setLatLng(lonlat);
+                    }
+                }
+            }
+
+            expire(mmsi) {
+                if (mmsi in this.vessel) {
+                    this.map.removeLayer(this.vessel[mmsi].marker);
+                    delete this.vessel[mmsi];
+                    console.log('--- ' + mmsi + ' was retired');
+                }
+            }
+        }
+
+// -------------------------------------------------------------------------------------------------
+        const main = new Main();
+// -------------------------------------------------------------------------------------------------
+        jQuery.ajax({
+            url: 'shiplist',
+            type: 'GET',
+            dataType: 'json',
+        }).done(function (data) {
+            // console.log(data);
+            for (let k in data) {
+                const vessel = new Vessel(data[k].profeel, data[k].location, data[k].at);
+                // main.vessel[k] = vessel;
+                // vessel.marker.addTo(main.map);
+                main.append(k, data[k].profeel, data[k].location, data[k].at)
+            }
+        });
+// -------------------------------------------------------------------------------------------------
+
+        const w = jQuery(window);
+        w.on('focus', function (e) {
+            main.isWindowActive = true;
+            console.log('Active');
+        });
+        w.on('blur', function (e) {
+            main.isWindowActive = false;
+            console.log('not Active');
+        });
+
+        let ws = new WebSocket('ws://localhost/ws');
+        ws.onopen = function (e) {
+            console.log(e);
+        }
+        ws.onmessage = function (message) {
+            const data = JSON.parse(message.data);
+            const mmsi = data.mmsi;
+            const type = data.type;
+            switch (type) {
+                case 'debut':
+                    main.append(mmsi, data.profeel, data.location, data.at);
+                    break;
+                case 'live':
+                    main.move(mmsi, data.location);
+                    break;
+                case 'retire':
+                    main.expire(mmsi);
+                    break;
+                default:
+                    break;
+            }
+        }
+    });
+</script>
+</body>
+</html>
