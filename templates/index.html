@@ -48,6 +48,7 @@
                 this.at = at;
                 this.profeel = profeel;
                 this.location = location;
+                this.counter = 0;
 
                 const img = profeel.AISclass === 'A' ? '../static/imgs/kaniS.png' : '../static/imgs/kameS.png';
                 this.icon = L.icon({iconUrl: img});
@@ -103,6 +104,7 @@
             move(mmsi, location) {
                 if (mmsi in this.vessel) {
                     const target = this.vessel[mmsi];
+                    target.counter++;
                     const duration = target.profeel.AISclass === 'A' ? 500 : 1000;
                     const opacity = location.sog > 2 ? 1.0 : 0.5;
                     target.marker.setOpacity(opacity);
@@ -110,6 +112,7 @@
                     const lonlat = L.latLng(location.lat, location.lon);
                     if(this.isWindowActive) {
                         target.marker.moveTo(lonlat, duration);
+                        // console.log(mmsi + ' ' + target.counter);
                     }
                     else{
                         target.marker.setLatLng(lonlat);
