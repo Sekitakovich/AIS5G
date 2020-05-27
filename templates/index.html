@@ -80,12 +80,35 @@
                 this.wm.addTo(this.map);
             }
 
+            append(mmsi, p, l, at) {
+                if (mmsi in this.vessel) {
+
+                } else {
+                    const profeel = new Profeel(p.name, p.callsign, p.imo, p.AISclass, p.shipType);
+                    const location = new Location(l.lon, l.lat, l.sog, l.hdg, l.sv);
+                    const vessel = new Vessel(profeel, location, at);
+                    this.vessel[mmsi] = vessel;
+                    vessel.marker.addTo(this.map);
+                    console.log('+++ ' + profeel.name + ' was debut');
+                }
+            }
+
             move(mmsi, location) {
-                const target = this.vessel[mmsi];
-                const opacity = location.sog > 2 ? 1.0 : 0.5;
-                target.marker.setOpacity(opacity);
-                target.marker.setRotationAngle(location.hdg);
-                target.marker.moveTo([location.lat, location.lon], 1000);
+                if (mmsi in this.vessel) {
+                    const target = this.vessel[mmsi];
+                    const opacity = location.sog > 2 ? 1.0 : 0.5;
+                    target.marker.setOpacity(opacity);
+                    target.marker.setRotationAngle(location.hdg);
+                    target.marker.moveTo([location.lat, location.lon], 1000);
+                }
+            }
+
+            expire(mmsi) {
+                if (mmsi in this.vessel) {
+                    this.map.removeLayer(this.vessel[mmsi].marker);
+                    delete this.vessel[mmsi];
+                    console.log('--- ' + mmsi + ' was retired');
+                }
             }
         }
 
@@ -116,26 +139,13 @@
             const type = data.type;
             switch (type) {
                 case 'debut':
-                    const p = data.profeel;
-                    const profeel = new Profeel(p.name, p.callsign, p.imo, p.AISclass, p.shipType);
-                    const l = data.location;
-                    const location = new Location(l.lon, l.lat, l.sog, l.hdg, l.sv);
-                    const vessel = new Vessel(profeel, location, data.at);
-                    main.vessel[mmsi] = vessel;
-                    vessel.marker.addTo(main.map);
-                    console.log('--- ' + mmsi + ' was debut');
+                    main.append(mmsi, data.profeel, data.location, data.at);
                     break;
                 case 'live':
-                    if (mmsi in main.vessel) {
-                        main.move(mmsi, data.location);
-                    }
+                    main.move(mmsi, data.location);
                     break;
                 case 'retire':
-                    if (mmsi in main.vessel) {
-                        main.map.removeLayer(main.vessel[mmsi].marker);
-                        delete main.vessel[mmsi];
-                        console.log('--- ' + mmsi + ' was retired');
-                    }
+                    main.expire(mmsi);
                     break;
                 default:
                     break;
