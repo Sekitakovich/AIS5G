@@ -57,6 +57,9 @@
                     rotationAngle: 0,
                 });
                 this.marker.setOpacity(0.25);
+                this.marker.bindPopup(this.profeel.name,{
+
+                });
             }
         }
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -80,14 +83,14 @@
                 });
                 this.tileLayer.addTo(this.map);
 
-                this.woman = L.icon({
-                    iconUrl: "../static/images/woman.gif",
-                    iconSize: [64, 64]
-                });
-                this.wm = L.marker(this.baseLatLng, {icon: this.woman});
-                this.wm.addTo(this.map);
+                // this.woman = L.icon({
+                //     iconUrl: "../static/images/woman.gif",
+                //     iconSize: [64, 64]
+                // });
+                // this.wm = L.marker(this.baseLatLng, {icon: this.woman});
+                // this.wm.addTo(this.map);
             }
-
+// ---------------------------------------------------------------------
             append(mmsi, p, l, at) {
                 if (mmsi in this.vessel) {
 
@@ -100,7 +103,7 @@
                     console.log('+++ ' + mmsi + '(' + profeel.name + ')' + ' was debut');
                 }
             }
-
+// ---------------------------------------------------------------------
             move(mmsi, location) {
                 if (mmsi in this.vessel) {
                     const target = this.vessel[mmsi];
@@ -115,11 +118,11 @@
                         // console.log(mmsi + ' ' + target.counter);
                     }
                     else{
-                        // target.marker.setLatLng(lonlat);
+                        target.marker.setLatLng(lonlat);
                     }
                 }
             }
-
+// ---------------------------------------------------------------------
             expire(mmsi) {
                 if (mmsi in this.vessel) {
                     this.map.removeLayer(this.vessel[mmsi].marker);

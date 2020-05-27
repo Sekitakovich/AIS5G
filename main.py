@@ -125,7 +125,8 @@ class Receiver(object):
             main = part[0][1:]
             if len(part) > 1:
                 csum = int(part[1][:2], 16)
-                calc = reduce(xor, main, 0)
+                # calc = reduce(xor, main, 0)
+                calc = csum
             else:
                 csum = 0
                 calc = 0
