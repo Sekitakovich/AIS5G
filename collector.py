@@ -146,27 +146,33 @@ class Receiver(object):
 
 @dataclass()
 class Profeel(object):
-    aisType: int
-    name: str
-    imo: int
-    shipType: int
-    callsign: str
+    aisClass: str = ''  # A or B
+    aisType: int = 0
+    name: str = ''
+    imo: int = 0
+    shipType: int = 0
+    callsign: str = ''
+
 
 @dataclass()
 class Running(object):
-    valid: bool = True
+    # valid: bool = True
     lon: float = 0.0
     lat: float = 0.0
     sog: float = 0.0
     hdg: int = 0
     sv: bool = True
-    hv: bool = True
+    # hv: bool = True
+
 
 @dataclass()
 class Vessel(object):
     at: dt
-    profeel: Profeel
-    running: Running = Running(valid=False)
+    isp: bool = False  # is profeel entered?
+    profeel: Profeel = Profeel()
+    locs: int = 0  # location update counter
+    running: Running = Running()
+    debut: bool = False  # happy!
 
 
 class Collector(Thread):
@@ -266,6 +272,7 @@ class Collector(Thread):
             body = data.body
 
             if header.type in [5, 19, 24]:
+                aisClass = 'B' if header.type == 5 else 'A'
                 name = body['shipname']
                 imo = body['imo'] if 'imo' in body else ''
                 callsign = body['callsign'] if 'callsign' in body else ''
@@ -273,14 +280,22 @@ class Collector(Thread):
 
                 if mmsi not in self.vessel:
                     logger.debug('+++ append %d (%s)' % (mmsi, name))
-                    profeel = Profeel(name=name, imo=imo, callsign=callsign, aisType=header.type, shipType=shiptype)
-                    self.vessel[mmsi] = Vessel(profeel=profeel, at=dt.now())
-                    self.sendProfeel(mmsi=mmsi, profeel=profeel)
-                    if mmsi in self.orphan.keys():
-                        running = self.orphan[mmsi]
-                        self.vessel[mmsi].running = running
-                        self.sendRunning(mmsi=mmsi, running=running)
-                        del(self.orphan[mmsi])
+                    profeel = Profeel(name=name, imo=imo, callsign=callsign, aisType=header.type, shipType=shiptype, aisClass=aisClass)
+                    self.vessel[mmsi] = Vessel(profeel=profeel, isp=True, at=dt.now())
+                    if self.vessel[mmsi].locs:
+                        self.vessel[mmsi].debut = True
+
+
+
+
+
+
+                    # self.sendProfeel(mmsi=mmsi, profeel=profeel)
+                    # if mmsi in self.orphan.keys():
+                    #     running = self.orphan[mmsi]
+                    #     self.vessel[mmsi].running = running
+                    #     self.sendRunning(mmsi=mmsi, running=running)
+                    #     del (self.orphan[mmsi])
                 else:
                     secs = (now - self.vessel[mmsi].at).total_seconds()
                     self.vessel[mmsi].at = now
@@ -312,13 +327,15 @@ class Collector(Thread):
                 else:
                     hdg = angle
 
-                running = Running(lat=lat, lon=lon, sog=sog, hdg=hdg, sv=sv, hv=hv)
+                running = Running(lat=lat, lon=lon, sog=sog, hdg=hdg, sv=sv)
 
                 if mmsi in self.vessel:
                     target = self.vessel[mmsi]
                     target.running = running
                 else:
-                    self.orphan[mmsi] = running
+                    # self.orphan[mmsi] = running
+                    self.vessel[mmsi] = Vessel(at=now, running=running, locs=1)
+
                 self.sendRunning(mmsi=mmsi, running=running)
 
 

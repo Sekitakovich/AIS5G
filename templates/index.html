@@ -44,10 +44,11 @@
         }
 
         class Vessel {
-            constructor(profeel, location, at) {
+            constructor(profeel, location, at, isCustomer) {
                 this.at = at;
                 this.profeel = profeel;
                 this.location = location;
+                this.isCustomer = isCustomer;
                 this.counter = 0;
 
                 const img = profeel.AISclass === 'A' ? '../static/imgs/kaniS.png' : '../static/imgs/kameS.png';
@@ -56,6 +57,16 @@
                 this.marker = L.Marker.movingMarker([[this.location.lat, this.location.lon]], [], {
                     icon: this.icon,
                     rotationAngle: 0,
+                });
+                this.marker.bindTooltip(this.profeel.name,{
+                    permanent: false,
+                    // sticky: true,
+                });
+                this.marker.bindPopup(this.profeel.callsign,{
+
+                });
+                this.marker.on('click', function (e) {
+                    console.log(e);
                 });
                 this.marker.setOpacity(0.25);
             }
@@ -76,7 +87,7 @@
                     console.log(this);
                 });
 
-                this.tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                this.tileLayer = L.tileLayer.grayscale('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     maxZoom: 19,
                 });
                 this.tileLayer.addTo(this.map);
@@ -89,16 +100,17 @@
                 this.wm.addTo(this.map);
             }
 
-            append(mmsi, p, l, at) {
+            append(mmsi, p, l, at, isCustomer) {
                 if (mmsi in this.vessel) {
 
                 } else {
                     const profeel = new Profeel(p.name, p.callsign, p.imo, p.AISclass, p.shipType);
                     const location = new Location(l.lon, l.lat, l.sog, l.hdg, l.sv);
-                    const vessel = new Vessel(profeel, location, at);
+                    const vessel = new Vessel(profeel, location, at, isCustomer);
                     vessel.marker.addTo(this.map);
                     this.vessel[mmsi] = vessel;
                     console.log('+++ ' + mmsi + '(' + profeel.name + ')' + ' was debut');
+                    // console.log(vessel);
                 }
             }
 
@@ -116,7 +128,7 @@
                         // console.log(mmsi + ' ' + target.counter);
                     }
                     else{
-                        // target.marker.setLatLng(lonlat);
+                        target.marker.setLatLng(lonlat);
                     }
                 }
             }
@@ -140,10 +152,10 @@
         }).done(function (data) {
             // console.log(data);
             for (let k in data) {
-                const vessel = new Vessel(data[k].profeel, data[k].location, data[k].at);
+                // const vessel = new Vessel(data[k].profeel, data[k].location, data[k].at);
                 // main.vessel[k] = vessel;
                 // vessel.marker.addTo(main.map);
-                main.append(k, data[k].profeel, data[k].location, data[k].at)
+                main.append(k, data[k].profeel, data[k].location, data[k].at, data[k].isCustomer)
             }
         });
 // -------------------------------------------------------------------------------------------------
@@ -158,7 +170,8 @@
             console.log('not Active');
         });
 
-        let ws = new WebSocket('ws://localhost/ws');
+        // console.log(location.host);
+        let ws = new WebSocket('ws://' + location.host +'/ws');
         ws.onopen = function (e) {
             console.log(e);
         }
@@ -168,7 +181,7 @@
             const type = data.type;
             switch (type) {
                 case 'debut':
-                    main.append(mmsi, data.profeel, data.location, data.at);
+                    main.append(mmsi, data.profeel, data.location, data.at, data.isCustomer);
                     break;
                 case 'live':
                     main.move(mmsi, data.location);
