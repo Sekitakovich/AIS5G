@@ -79,6 +79,14 @@
                 this.wm = L.marker(this.baseLatLng, {icon: this.woman});
                 this.wm.addTo(this.map);
             }
+
+            move(mmsi, location) {
+                const target = this.vessel[mmsi];
+                const opacity = location.sog > 2 ? 1.0 : 0.5;
+                target.marker.setOpacity(opacity);
+                target.marker.setRotationAngle(location.hdg);
+                target.marker.moveTo([location.lat, location.lon], 1000);
+            }
         }
 
 // -------------------------------------------------------------------------------------------------
@@ -115,15 +123,18 @@
                     const vessel = new Vessel(profeel, location, data.at);
                     main.vessel[mmsi] = vessel;
                     vessel.marker.addTo(main.map);
+                    console.log('--- ' + mmsi + ' was debut');
                     break;
                 case 'live':
                     if (mmsi in main.vessel) {
-                        const ooo = data.location;
-                        const target = main.vessel[mmsi];
-                        const opacity = ooo.sog > 2 ? 1.0 : 0.5;
-                        target.marker.setOpacity(opacity);
-                        target.marker.setRotationAngle(ooo.hdg);
-                        target.marker.moveTo([ooo.lat, ooo.lon], 1000);
+                        main.move(mmsi, data.location);
+                    }
+                    break;
+                case 'retire':
+                    if (mmsi in main.vessel) {
+                        main.map.removeLayer(main.vessel[mmsi].marker);
+                        delete main.vessel[mmsi];
+                        console.log('--- ' + mmsi + ' was retired');
                     }
                     break;
                 default:

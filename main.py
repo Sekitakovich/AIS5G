@@ -203,7 +203,7 @@ class Collector(Thread):
         super().__init__()
         self.daemon = True
 
-        self.holdMinutes: int = 15
+        self.holdMinutes: int = 10
 
         self.infoQue = infoQueue
         self.tsFormat = '%Y-%m-%d %H:%M:%S'
@@ -341,6 +341,7 @@ class Collector(Thread):
                 if mmsi in self.vessel:
                     target = self.vessel[mmsi]
                     target.location = location
+                    target.at = now
                     target.lv = True
                     if target.pv:
                         if target.ready is False:
