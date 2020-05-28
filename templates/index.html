@@ -9,10 +9,22 @@
     <script type="text/javascript" src="../static/leaflet-grayscale-master/TileLayer.Grayscale.js"></script>
     <script type="text/javascript" src="../static/js/leaflet.rotatedMarker.js"></script>
     <script type="text/javascript" src="../static/Leaflet.MovingMarker-master/MovingMarker.js"></script>
+    <script type="text/javascript" src="../static/leaflet.bouncemarker-master/bouncemarker.js"></script>
+    <script type="text/javascript" src="../static/reconnecting-websocket-master/reconnecting-websocket.js"></script>
     <style>
         .map {
-            width: 1024px;
-            height: 768px;
+            width: 640px;
+            height: 640px;
+        }
+
+        @keyframes fade {
+            from {
+                opacity: 0.5;
+            }
+        }
+
+        .tako {
+            animation: fade 0.5s infinite alternate;
         }
     </style>
 </head>
@@ -43,37 +55,49 @@
             }
         }
 
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         class Vessel {
-            constructor(profeel, location, at, isCustomer) {
+            constructor(mmsi, profeel, location, at) {
+
+                const self = this; // mmm ...
+
                 this.at = at;
                 this.profeel = profeel;
                 this.location = location;
-                this.isCustomer = isCustomer;
+                this.showme = false;
                 this.counter = 0;
 
                 const img = profeel.AISclass === 'A' ? '../static/imgs/kaniS.png' : '../static/imgs/kameS.png';
-                this.icon = L.icon({iconUrl: img});
+                this.icon = L.icon({
+                    iconUrl: img,
+                    // className: 'tako',
+                });
 
                 this.marker = L.Marker.movingMarker([[this.location.lat, this.location.lon]], [], {
                     icon: this.icon,
                     rotationAngle: 0,
-                });
-                this.marker.bindTooltip(this.profeel.name,{
-                    permanent: false,
-                    // sticky: true,
-                });
-                this.marker.bindPopup(this.profeel.callsign,{
-
-                });
-                this.marker.on('click', function (e) {
-                    console.log(e);
+                    bounceOnAdd: true,
+                    bounceOnAddOptions: {
+                        height: 32,
+                        duration: 500,
+                        loop: 1,
+                    },
                 });
                 this.marker.setOpacity(0.25);
+                this.marker.bindPopup(this.profeel.name, {});
+                this.marker.bindTooltip(this.profeel.name, {});
+                this.marker.on('click', function (e) {
+                    console.log('counter = ' + self.counter); // Wao!
+                });
             }
         }
 
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         class Main {
             constructor() {
+
+                const self = this; // mmm ...
+
                 this.isWindowActive = true;
                 this.vessel = {};
                 this.baseLatLng = [1.236104, 103.835729];
@@ -81,10 +105,8 @@
                 this.map = L.map('map');
                 this.map.setView(this.baseLatLng, 14);
                 this.map.on('click', function (e) {
-                    console.log(e);
                     this.panTo(e.latlng);  // Wao!
-                    // e.target.wm.setLatLng(e.latlng);
-                    console.log(this);
+                    console.log(Object.keys(self.vessel).length); // never forget!
                 });
 
                 this.tileLayer = L.tileLayer.grayscale('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -92,47 +114,50 @@
                 });
                 this.tileLayer.addTo(this.map);
 
-                this.woman = L.icon({
-                    iconUrl: "../static/images/woman.gif",
-                    iconSize: [64, 64]
-                });
-                this.wm = L.marker(this.baseLatLng, {icon: this.woman});
-                this.wm.addTo(this.map);
+                // this.woman = L.icon({
+                //     iconUrl: "../static/images/woman.gif",
+                //     iconSize: [64, 64]
+                // });
+                // this.wm = L.marker(this.baseLatLng, {icon: this.woman});
+                // this.wm.addTo(this.map);
             }
 
-            append(mmsi, p, l, at, isCustomer) {
+// ---------------------------------------------------------------------
+            append(mmsi, p, l, at) {
                 if (mmsi in this.vessel) {
 
                 } else {
                     const profeel = new Profeel(p.name, p.callsign, p.imo, p.AISclass, p.shipType);
                     const location = new Location(l.lon, l.lat, l.sog, l.hdg, l.sv);
-                    const vessel = new Vessel(profeel, location, at, isCustomer);
+                    const vessel = new Vessel(mmsi, profeel, location, at);
                     vessel.marker.addTo(this.map);
                     this.vessel[mmsi] = vessel;
                     console.log('+++ ' + mmsi + '(' + profeel.name + ')' + ' was debut');
-                    // console.log(vessel);
                 }
             }
 
+// ---------------------------------------------------------------------
             move(mmsi, location) {
                 if (mmsi in this.vessel) {
                     const target = this.vessel[mmsi];
                     target.counter++;
                     const duration = target.profeel.AISclass === 'A' ? 500 : 1000;
-                    const opacity = location.sog > 2 ? 1.0 : 0.5;
+                    const opacity = location.sog > 1.5 ? 1.0 : 0.5;
                     target.marker.setOpacity(opacity);
                     target.marker.setRotationAngle(location.hdg);
                     const lonlat = L.latLng(location.lat, location.lon);
-                    if(this.isWindowActive) {
+                    if (this.isWindowActive) {
                         target.marker.moveTo(lonlat, duration);
+                        // target.marker.className = 'tako';
+                        // target.marker.bounce({duration: 100, height: 16, loop: 1});
                         // console.log(mmsi + ' ' + target.counter);
-                    }
-                    else{
+                    } else {
                         target.marker.setLatLng(lonlat);
                     }
                 }
             }
 
+// ---------------------------------------------------------------------
             expire(mmsi) {
                 if (mmsi in this.vessel) {
                     this.map.removeLayer(this.vessel[mmsi].marker);
@@ -142,6 +167,7 @@
             }
         }
 
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // -------------------------------------------------------------------------------------------------
         const main = new Main();
 // -------------------------------------------------------------------------------------------------
@@ -152,10 +178,10 @@
         }).done(function (data) {
             // console.log(data);
             for (let k in data) {
-                // const vessel = new Vessel(data[k].profeel, data[k].location, data[k].at);
+                const vessel = new Vessel(k, data[k].profeel, data[k].location, data[k].at);
                 // main.vessel[k] = vessel;
                 // vessel.marker.addTo(main.map);
-                main.append(k, data[k].profeel, data[k].location, data[k].at, data[k].isCustomer)
+                main.append(k, data[k].profeel, data[k].location, data[k].at)
             }
         });
 // -------------------------------------------------------------------------------------------------
@@ -170,18 +196,15 @@
             console.log('not Active');
         });
 
-        // console.log(location.host);
-        let ws = new WebSocket('ws://' + location.host +'/ws');
-        ws.onopen = function (e) {
-            console.log(e);
-        }
+        const wsURL = 'ws://' + location.host + '/ws'
+        const ws = new ReconnectingWebSocket(wsURL);
         ws.onmessage = function (message) {
             const data = JSON.parse(message.data);
             const mmsi = data.mmsi;
             const type = data.type;
             switch (type) {
                 case 'debut':
-                    main.append(mmsi, data.profeel, data.location, data.at, data.isCustomer);
+                    main.append(mmsi, data.profeel, data.location, data.at);
                     break;
                 case 'live':
                     main.move(mmsi, data.location);

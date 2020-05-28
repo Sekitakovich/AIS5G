@@ -18,7 +18,33 @@ from dispatcher import Dispatcher, Result
 from websocketServer import WebsocketServer
 from map import Map
 from gis import GISLib
-from msrecv import fromUDP
+
+
+class fromUDP(Process):
+    def __init__(self, *, mcip: str, mcport: int, quePoint: MPQueue):
+        super().__init__()
+        self.daemon = True
+
+        self.mcip = mcip
+        self.mcport = mcport
+        self.quePoint = quePoint
+
+    def run(self) -> None:
+        bufferSize = 4096
+        run = True
+        try:
+            with closing(socket.socket(socket.AF_INET, socket.SOCK_DGRAM)) as sock:
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP,
+                                socket.inet_aton(self.mcip) + socket.inet_aton('0.0.0.0'))
+                sock.bind(('', self.mcport))
+
+                while run:
+                    udpPacket, ipv4 = sock.recvfrom(bufferSize)
+                    self.quePoint.put(udpPacket)
+        except (socket.error,) as e:
+            run = False
+            logger.critical(e)
 
 
 class Receiver(object):
@@ -146,33 +172,28 @@ class Receiver(object):
 
 @dataclass()
 class Profeel(object):
-    aisClass: str = ''  # A or B
-    aisType: int = 0
-    name: str = ''
-    imo: int = 0
-    shipType: int = 0
-    callsign: str = ''
-
+    aisType: int
+    name: str
+    imo: int
+    shipType: int
+    callsign: str
 
 @dataclass()
 class Running(object):
-    # valid: bool = True
+    valid: bool = True
+    status: int = 0
     lon: float = 0.0
     lat: float = 0.0
     sog: float = 0.0
     hdg: int = 0
     sv: bool = True
-    # hv: bool = True
-
+    hv: bool = True
 
 @dataclass()
 class Vessel(object):
     at: dt
-    isp: bool = False  # is profeel entered?
-    profeel: Profeel = Profeel()
-    locs: int = 0  # location update counter
-    running: Running = Running()
-    debut: bool = False  # happy!
+    profeel: Profeel
+    running: Running = Running(valid=False)
 
 
 class Collector(Thread):
@@ -272,7 +293,6 @@ class Collector(Thread):
             body = data.body
 
             if header.type in [5, 19, 24]:
-                aisClass = 'B' if header.type == 5 else 'A'
                 name = body['shipname']
                 imo = body['imo'] if 'imo' in body else ''
                 callsign = body['callsign'] if 'callsign' in body else ''
@@ -280,22 +300,14 @@ class Collector(Thread):
 
                 if mmsi not in self.vessel:
                     logger.debug('+++ append %d (%s)' % (mmsi, name))
-                    profeel = Profeel(name=name, imo=imo, callsign=callsign, aisType=header.type, shipType=shiptype, aisClass=aisClass)
-                    self.vessel[mmsi] = Vessel(profeel=profeel, isp=True, at=dt.now())
-                    if self.vessel[mmsi].locs:
-                        self.vessel[mmsi].debut = True
-
-
-
-
-
-
-                    # self.sendProfeel(mmsi=mmsi, profeel=profeel)
-                    # if mmsi in self.orphan.keys():
-                    #     running = self.orphan[mmsi]
-                    #     self.vessel[mmsi].running = running
-                    #     self.sendRunning(mmsi=mmsi, running=running)
-                    #     del (self.orphan[mmsi])
+                    profeel = Profeel(name=name, imo=imo, callsign=callsign, aisType=header.type, shipType=shiptype)
+                    self.vessel[mmsi] = Vessel(profeel=profeel, at=dt.now())
+                    self.sendProfeel(mmsi=mmsi, profeel=profeel)
+                    if mmsi in self.orphan.keys():
+                        running = self.orphan[mmsi]
+                        self.vessel[mmsi].running = running
+                        self.sendRunning(mmsi=mmsi, running=running)
+                        del(self.orphan[mmsi])
                 else:
                     secs = (now - self.vessel[mmsi].at).total_seconds()
                     self.vessel[mmsi].at = now
@@ -308,6 +320,9 @@ class Collector(Thread):
                     self.infoQue.put(info)
 
             elif header.type in [1, 2, 3, 18]:
+                if header.type in [1, 2, 3]:
+                    status = body['status']
+                else: status = 0
                 degLat = int(body['lat'])
                 degLon = int(body['lon'])
                 lat = float(degLat / 600000)
@@ -327,15 +342,13 @@ class Collector(Thread):
                 else:
                     hdg = angle
 
-                running = Running(lat=lat, lon=lon, sog=sog, hdg=hdg, sv=sv)
+                running = Running(lat=lat, lon=lon, sog=sog, hdg=hdg, sv=sv, hv=hv, status=status)
 
                 if mmsi in self.vessel:
                     target = self.vessel[mmsi]
                     target.running = running
                 else:
-                    # self.orphan[mmsi] = running
-                    self.vessel[mmsi] = Vessel(at=now, running=running, locs=1)
-
+                    self.orphan[mmsi] = running
                 self.sendRunning(mmsi=mmsi, running=running)
 
 
