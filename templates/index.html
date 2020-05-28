@@ -106,7 +106,7 @@
                 this.map.setView(this.baseLatLng, 14);
                 this.map.on('click', function (e) {
                     this.panTo(e.latlng);  // Wao!
-                    console.log('$$$ Hold vessels ' + Object.keys(self.vessel).length); // never forget!
+                    console.log(Object.keys(self.vessel).length); // never forget!
                 });
 
                 this.tileLayer = L.tileLayer.grayscale('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -152,11 +152,13 @@
                     const target = this.vessel[mmsi];
                     target.counter++;
                     const duration = target.profeel.AISclass === 'A' ? 500 : 1000;
-                    const opacity = location.sog > 1.5 ? 1.0 : 0.5;
+                    const opacity = location['sog'] > 1.5 ? 1.0 : 0.5;
                     target.marker.setOpacity(opacity);
-                    target.marker.setRotationAngle(location.hdg);
-                    const lonlat = L.latLng(location.lat, location.lon);
+                    target.marker.setRotationAngle(location['hdg']);
+                    const lonlat = L.latLng(location['lat'], location['lon']);
                     if (this.isWindowActive) {
+                        let before = target.marker.getLatLng()
+                        console.log(before)
                         target.marker.moveTo(lonlat, duration);
                         // target.marker.className = 'tako';
                         // target.marker.bounce({duration: 100, height: 16, loop: 1});
@@ -209,15 +211,20 @@
         const wsURL = 'ws://' + location.host + '/ws'
         const ws = new ReconnectingWebSocket(wsURL);
         ws.onmessage = function (message) {
-            const data = JSON.parse(message.data);
-            const mmsi = data.mmsi;
-            const type = data.type;
+            const data = JSON.parse(message['data']);
+            const mmsi = data['mmsi'];
+            const type = data['type'];
             switch (type) {
                 case 'debut':
                     main.append(mmsi, data.profeel, data.location, data.at);
                     break;
                 case 'live':
-                    main.move(mmsi, data.location);
+                    const location = data['location'];
+                    // if(location.lon == 181){
+                    //     console.log(mmsi,location);
+                    // }
+                    main.move(mmsi, location);
+                    // console.log(location);
                     break;
                 case 'retire':
                     main.expire(mmsi);

@@ -358,12 +358,13 @@ class Collector(Thread):
                     self.entries += 1
                 target = self.vessel[mmsi]
                 if target.ready:
-                    passed = (now - target.lastSend).total_seconds()
-                    if passed >= 1:
-                        self.sendLocation(mmsi=mmsi, location=location, at=now)
-                        target.lastSend = now
-                    else:
-                        logger.error('!!! too rapid(%f) at %s %s' % (passed, target.profeel.name, header))
+                    self.sendLocation(mmsi=mmsi, location=location, at=now)
+                # passed = (now - target.lastSend).total_seconds()
+                # if passed >= 1:
+                #     self.sendLocation(mmsi=mmsi, location=location, at=now)
+                #     target.lastSend = now
+                # else:
+                #     logger.error('!!! too rapid(%f) at %s %s' % (passed, target.profeel.name, header))
 
 
 class Main(responder.API):
