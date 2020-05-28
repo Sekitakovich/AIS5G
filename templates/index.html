@@ -86,7 +86,7 @@
                 this.marker.setOpacity(0.25);
                 this.marker.bindPopup(this.profeel.name, {});
                 this.marker.bindTooltip(this.profeel.name, {});
-                this.marker.on('click', function(e){
+                this.marker.on('click', function (e) {
                     console.log('counter = ' + self.counter); // Wao!
                 });
             }
@@ -95,6 +95,9 @@
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         class Main {
             constructor() {
+
+                const self = this; // mmm ...
+
                 this.isWindowActive = true;
                 this.vessel = {};
                 this.baseLatLng = [1.236104, 103.835729];
@@ -102,10 +105,8 @@
                 this.map = L.map('map');
                 this.map.setView(this.baseLatLng, 14);
                 this.map.on('click', function (e) {
-                    console.log(e);
                     this.panTo(e.latlng);  // Wao!
-                    // e.target.wm.setLatLng(e.latlng);
-                    console.log(this);
+                    console.log(Object.keys(self.vessel).length); // never forget!
                 });
 
                 this.tileLayer = L.tileLayer.grayscale('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
