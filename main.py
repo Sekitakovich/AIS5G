@@ -197,6 +197,8 @@ class Vessel(object):
     ready: bool = False
     profeel: Profeel = Profeel()
     location: Location = Location()
+    isCustomer: bool = False  # is customer ?
+    lastSend: dt = dt.now()
 
 
 class Collector(Thread):
@@ -231,7 +233,8 @@ class Collector(Thread):
             'mmsi': mmsi,
             'profeel': asdict(target.profeel),
             'location': asdict(target.location),
-            'at': dt.now().strftime(self.tsFormat)
+            'at': dt.now().strftime(self.tsFormat),
+            'isCustomer': False,
         }
         self.infoQue.put(info)
 
@@ -305,6 +308,7 @@ class Collector(Thread):
 
                 if mmsi not in self.vessel:
                     self.vessel[mmsi] = Vessel(profeel=profeel, pv=True, at=now)
+                    self.entries += 1
                     # logger.debug('+++ append %d (%s) from profeel' % (mmsi, name))
                 else:
                     target = self.vessel[mmsi]
@@ -315,7 +319,6 @@ class Collector(Thread):
                     if target.lv:
                         if target.ready is False:
                             target.ready = True
-                            self.entries += 1
                             self.sendFull(mmsi=mmsi)
                             logger.success('!!! %d(%s) was Completed' % (mmsi, target.profeel.name))
 
@@ -347,19 +350,27 @@ class Collector(Thread):
                     if target.pv:
                         if target.ready is False:
                             target.ready = True
-                            self.entries += 1
-                            logger.success('!!! %d(%s) was Completed' % (mmsi,target.profeel.name))
+                            logger.success('!!! %d(%s) was Completed' % (mmsi, target.profeel.name))
                             self.sendFull(mmsi=mmsi)
 
                 else:
                     self.vessel[mmsi] = Vessel(location=location, lv=True, at=now)
-                if self.vessel[mmsi].ready:
-                    self.sendLocation(mmsi=mmsi, location=location, at=now)
+                    self.entries += 1
+                target = self.vessel[mmsi]
+                if target.ready:
+                    passed = (now - target.lastSend).total_seconds()
+                    if passed >= 1:
+                        self.sendLocation(mmsi=mmsi, location=location, at=now)
+                        target.lastSend = now
+                    else:
+                        logger.error('!!! too rapid(%f) at %s %s' % (passed, target.profeel.name, header))
+
 
 class Main(responder.API):
-    def __init__(self):
+    def __init__(self, *, port: int = 8080):
         super().__init__()
 
+        self.port = port
         self.infoQueue = queue.Queue()
         self.t = Thread(target=self.entrance, daemon=True)
         self.t.start()
@@ -380,7 +391,7 @@ class Main(responder.API):
         self.add_route('/', self.map.top)
         self.add_route('/shiplist', self.shipList)
 
-        self.run(address='0.0.0.0', port=80)
+        self.run(address='0.0.0.0', port=port)
 
     def shipList(self, req: responder.Request, resp: responder.Response):
         s = self.collector.listUP()

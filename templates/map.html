@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="../static/leaflet/leaflet.css">
     <script type="text/javascript" src="../static/leaflet/leaflet.js"></script>
     <script type="text/javascript" src="../static/js/leaflet.rotatedMarker.js"></script>
-    <script type="text/javascript" src="../static/js/bouncemarker.js"></script>
+    <script type="text/javascript" src="../static/Leaflet.MovingMarker-master/MovingMarker.js"></script>
     <style>
         .map {
             width: 1024px;
@@ -84,7 +84,16 @@
                 const img = profeel['aisType'] === 5 ? '../static/imgs/kaniS.png' : '../static/imgs/kameS.png';
                 const icon = L.icon({iconUrl: img});
                 const latlng = running.valid ? L.latLng(running.lat, running.lon) : zerolatlng;
-                const marker = L.marker(latlng, {icon: icon});
+                // const marker = L.marker(latlng, {icon: icon});
+                const marker = L.Marker.movingMarker(
+                    [latlng], [],
+                    {
+                        icon: icon,
+                        autostart: false,
+                        rotationAngle: 0,
+                        rotationOrigin: 'center center',
+                    }
+                );
                 vessel[k] = {
                     'at': item.at,
                     'body': profeel,
@@ -113,7 +122,6 @@
                 case 'retire':
                     if (mmsi in vessel) {
                         const home = vessel[mmsi];
-                        // console.log(home);
                         if (home['show']) {  //console.log('$$$ remove '+ home);
                             map.removeLayer(home['marker']);
                         }
@@ -129,14 +137,23 @@
                     const body = data['body']; //console.log(body);
                     let img = body['aisType'] === 5 ? '../static/imgs/kaniS.png' : '../static/imgs/kameS.png';
                     const icon = L.icon({iconUrl: img});
-                    const marker = L.marker(zerolatlng, {
-                        icon: icon,
-                        bounceOnAdd: false,
-                        bounceOnAddOptions: {duration: 500, height: 100, loop: 1},
-                        bounceOnAddCallback: function () {
-                            // console.log("done");
+                    // const marker = L.marker(zerolatlng, {
+                    //     icon: icon,
+                    //     bounceOnAdd: false,
+                    //     bounceOnAddOptions: {duration: 500, height: 100, loop: 1},
+                    //     bounceOnAddCallback: function () {
+                    //         // console.log("done");
+                    //     }
+                    // });
+                    const marker = L.Marker.movingMarker(
+                        [[0, 0]], [],
+                        {
+                            icon: icon,
+                            autostart: false,
+                            rotationAngle: 0,
+                            rotationOrigin: 'center center',
                         }
-                    });
+                    );
                     vessel[mmsi] = {
                         'at': new Date(),
                         'body': body,
@@ -158,7 +175,7 @@
                         const home = vessel[mmsi];
                         if (home.show === false) {
                             home.marker.addTo(map);
-                            home.marker.bounce({duration: 1000, height: 100});
+                            // home.marker.bounce({duration: 1000, height: 100});
                             home.show = true;
                         }
                         if (location['hv']) {
@@ -166,7 +183,8 @@
                             home.marker.setRotationAngle(angle);
                         }
                         home.marker.setOpacity(location['sog'] < 2 ? 0.5 : 1.0);
-                        home.marker.setLatLng(latlng);
+                        // home.marker.setLatLng(latlng);
+                        home.marker.moveTo(latlng, 1000);
                         home.latlng = latlng;
                         // console.log(home);
                     }

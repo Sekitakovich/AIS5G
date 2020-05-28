@@ -181,6 +181,7 @@ class Profeel(object):
 @dataclass()
 class Running(object):
     valid: bool = True
+    status: int = 0
     lon: float = 0.0
     lat: float = 0.0
     sog: float = 0.0
@@ -319,6 +320,9 @@ class Collector(Thread):
                     self.infoQue.put(info)
 
             elif header.type in [1, 2, 3, 18]:
+                if header.type in [1, 2, 3]:
+                    status = body['status']
+                else: status = 0
                 degLat = int(body['lat'])
                 degLon = int(body['lon'])
                 lat = float(degLat / 600000)
@@ -338,7 +342,7 @@ class Collector(Thread):
                 else:
                     hdg = angle
 
-                running = Running(lat=lat, lon=lon, sog=sog, hdg=hdg, sv=sv, hv=hv)
+                running = Running(lat=lat, lon=lon, sog=sog, hdg=hdg, sv=sv, hv=hv, status=status)
 
                 if mmsi in self.vessel:
                     target = self.vessel[mmsi]
