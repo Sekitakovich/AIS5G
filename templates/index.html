@@ -140,21 +140,28 @@
             move(mmsi, location) {
                 if (mmsi in this.vessel) {
                     const target = this.vessel[mmsi];
-                    target.counter++;
-                    const duration = target.profeel.AISclass === 'A' ? 500 : 1000;
-                    const opacity = location['sog'] > 1.5 ? 1.0 : 0.5;
-                    target.marker.setOpacity(opacity);
-                    target.marker.setRotationAngle(location['hdg']);
-                    const lonlat = L.latLng(location['lat'], location['lon']);
-                    if (this.isWindowActive) {
-                        let before = target.marker.getLatLng()
-                        console.log(before)
-                        target.marker.moveTo(lonlat, duration);
-                        // target.marker.className = 'tako';
-                        // target.marker.bounce({duration: 100, height: 16, loop: 1});
-                        // console.log(mmsi + ' ' + target.counter);
+
+                    const top = target.marker.getLatLng()
+                    // console.log(location)
+                    const d = this.distance(top['lat'], top['lng'], location['lat'], location['lon']);
+                    if (d) {
+                        // console.log('>>> ' + mmsi + ' was moved ' + d)
+                        target.counter++;
+                        const duration = target.profeel.AISclass === 'A' ? 500 : 1000;
+                        const opacity = location['sog'] > 1.5 ? 1.0 : 0.5;
+                        target.marker.setOpacity(opacity);
+                        target.marker.setRotationAngle(location['hdg']);
+                        const lonlat = L.latLng(location['lat'], location['lon']);
+                        if (this.isWindowActive) {
+                            target.marker.moveTo(lonlat, duration);
+                        } else {
+                            target.marker.setLatLng(lonlat);
+                        }
                     } else {
-                        target.marker.setLatLng(lonlat);
+                        if (isNaN(d)) {
+                            console.log(mmsi + ' NaN at ' + top + ' and ' + location)
+                        }
+                        // console.log('distance = ' + d)
                     }
                 }
             }
@@ -165,6 +172,21 @@
                     this.map.removeLayer(this.vessel[mmsi].marker);
                     delete this.vessel[mmsi];
                     console.log('--- ' + mmsi + ' was retired');
+                }
+            }
+
+            distance(lat1, lng1, lat2, lng2) {
+                if (lat1 !== lat2 || lng1 !== lng2) {
+                    // console.log(lat1, lng1, lat2, lng2)
+                    lat1 *= Math.PI / 180;
+                    lng1 *= Math.PI / 180;
+                    lat2 *= Math.PI / 180;
+                    lng2 *= Math.PI / 180;
+                    return 6371 * Math.acos(Math.cos(lat1) * Math.cos(lat2) * Math.cos(lng2 - lng1) + Math.sin(lat1) * Math.sin(lat2));
+                }
+                else{
+                    console.log('*** zero distance');
+                    return 0;
                 }
             }
         }
@@ -206,13 +228,10 @@
             const type = data['type'];
             switch (type) {
                 case 'debut':
-                    main.append(mmsi, data.profeel, data.location, data.at);
+                    main.append(mmsi, data['profeel'], data['location'], data['at']);
                     break;
                 case 'live':
                     const location = data['location'];
-                    // if(location.lon == 181){
-                    //     console.log(mmsi,location);
-                    // }
                     main.move(mmsi, location);
                     // console.log(location);
                     break;
