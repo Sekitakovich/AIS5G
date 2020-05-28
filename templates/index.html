@@ -13,8 +13,8 @@
     <script type="text/javascript" src="../static/reconnecting-websocket-master/reconnecting-websocket.js"></script>
     <style>
         .map {
-            width: 640px;
-            height: 640px;
+            width: 1024px;
+            height: 768px;
         }
 
         @keyframes fade {
@@ -67,7 +67,18 @@
                 this.showme = false;
                 this.counter = 0;
 
-                const img = profeel.AISclass === 'A' ? '../static/imgs/kaniS.png' : '../static/imgs/kameS.png';
+                let img = '../static/imgs/kaniS.png';
+                if (profeel.AISclass !== 'A') {
+                    img = '../static/imgs/ant.png';
+                } else {
+                    if ((profeel.shipType / 10) === 8) {
+                        img = '../static/imgs/oil.png';
+                    } else if ((profeel.shipType / 10) === 7) {
+                        img = '../static/imgs/kameS.png';
+                    } else if ((profeel.shipType / 10) === 5) {
+                        img = '../static/imgs/daruma.png';
+                    }
+                }
                 this.icon = L.icon({
                     iconUrl: img,
                     // className: 'tako',
@@ -132,7 +143,7 @@
                     const vessel = new Vessel(mmsi, profeel, location, at);
                     vessel.marker.addTo(this.map);
                     this.vessel[mmsi] = vessel;
-                    console.log('+++ ' + mmsi + '(' + profeel.name + ')' + ' was debut');
+                    console.log('+++ ' + mmsi + '(' + profeel.name + ')' + ' ' + profeel.shipType + ' was debut');
                 }
             }
 
@@ -148,7 +159,7 @@
                         // console.log('>>> ' + mmsi + ' was moved ' + d)
                         target.counter++;
                         const duration = target.profeel.AISclass === 'A' ? 500 : 1000;
-                        const opacity = location['sog'] > 1.5 ? 1.0 : 0.5;
+                        const opacity = location['sog'] > 1.0 ? 1.0 : 0.5;
                         target.marker.setOpacity(opacity);
                         target.marker.setRotationAngle(location['hdg']);
                         const lonlat = L.latLng(location['lat'], location['lon']);
@@ -183,8 +194,7 @@
                     lat2 *= Math.PI / 180;
                     lng2 *= Math.PI / 180;
                     return 6371 * Math.acos(Math.cos(lat1) * Math.cos(lat2) * Math.cos(lng2 - lng1) + Math.sin(lat1) * Math.sin(lat2));
-                }
-                else{
+                } else {
                     console.log('*** zero distance');
                     return 0;
                 }

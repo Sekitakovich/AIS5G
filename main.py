@@ -322,7 +322,9 @@ class Collector(Thread):
                             self.sendFull(mmsi=mmsi)
                             logger.success('!!! %d(%s) was Completed' % (mmsi, target.profeel.name))
 
-            elif header.type in [1, 2, 3, 18]:
+            elif header.type in [1, 2, 3, 18, 19]:
+                if header.type == 19:
+                    logger.debug('Found 19 at %d' % mmsi)
                 degLat = int(body['lat'])
                 degLon = int(body['lon'])
                 lat = float(degLat / 600000)
@@ -344,6 +346,7 @@ class Collector(Thread):
 
                 if mmsi in self.vessel:
                     target = self.vessel[mmsi]
+                    distance = GISLib.flatDistance(x1=target.location.lat, x2=location.lat, y1=target.location.lon, y2=location.lon)
                     target.location = location
                     target.at = now
                     target.lv = True
@@ -352,13 +355,23 @@ class Collector(Thread):
                             target.ready = True
                             logger.success('!!! %d(%s) was Completed' % (mmsi, target.profeel.name))
                             self.sendFull(mmsi=mmsi)
+                        else:
+                            if distance:
+                                self.sendLocation(mmsi=mmsi, location=location, at=now)
+                            else:
+                                logger.warning('Zero distance at %d (%s)' % (mmsi, target.profeel.name))
+                    else:
+                        pass
 
                 else:
                     self.vessel[mmsi] = Vessel(location=location, lv=True, at=now)
                     self.entries += 1
-                target = self.vessel[mmsi]
-                if target.ready:
-                    self.sendLocation(mmsi=mmsi, location=location, at=now)
+                    # target = self.vessel[mmsi]
+                    # if target.ready:
+                    #     if location.lat != target.location.lat or location.lon != target.location.lon:
+                    #         self.sendLocation(mmsi=mmsi, location=location, at=now)
+                    #     else:
+                    #         logger.debug('%d was not moved' % mmsi)
                 # passed = (now - target.lastSend).total_seconds()
                 # if passed >= 1:
                 #     self.sendLocation(mmsi=mmsi, location=location, at=now)
