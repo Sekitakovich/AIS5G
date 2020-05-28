@@ -48,8 +48,11 @@ class WebsocketServer(object):
                     logger.debug('[%s] from %s' % (msg, key))
 
     async def _broadcast(self, *, message: str):  # 念願叶う
-        for v in self.clients.values():
-            await v.send_text(message)
+        try:
+            for v in self.clients.values():
+                await v.send_text(message)
+        except Exception as e:
+            logger.error(e)
 
     def bc(self, *, message: str):
         if len(self.clients) and message:
