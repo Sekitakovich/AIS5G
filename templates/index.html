@@ -114,22 +114,12 @@
                 });
                 this.tileLayer.addTo(this.map);
 
-                this.woman = L.icon({
-                    iconUrl: "../static/images/woman.gif",
-                    iconSize: [64, 64]
-                });
-                this.wm = L.Marker.movingMarker([this.baseLatLng], [], {
-                    icon: this.woman,
-                    rotationAngle: 0,
-                    // bounceOnAdd: false,
-                    // bounceOnAddOptions: {
-                    //     height: 32,
-                    //     duration: 500,
-                    //     loop: 1,
-                    // },
-                });
+                // this.woman = L.icon({
+                //     iconUrl: "../static/images/woman.gif",
+                //     iconSize: [64, 64]
+                // });
                 // this.wm = L.marker(this.baseLatLng, {icon: this.woman});
-                this.wm.addTo(this.map);
+                // this.wm.addTo(this.map);
             }
 
 // ---------------------------------------------------------------------
