@@ -13,8 +13,8 @@
     <script type="text/javascript" src="../static/reconnecting-websocket-master/reconnecting-websocket.js"></script>
     <style>
         .map {
-            width: 1024px;
-            height: 768px;
+            width: 640px;
+            height: 640px;
         }
 
         @keyframes fade {
@@ -57,10 +57,14 @@
 
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         class Vessel {
-            constructor(profeel, location, at) {
+            constructor(mmsi, profeel, location, at) {
+
+                const self = this; // mmm ...
+
                 this.at = at;
                 this.profeel = profeel;
                 this.location = location;
+                this.showme = false;
                 this.counter = 0;
 
                 const img = profeel.AISclass === 'A' ? '../static/imgs/kaniS.png' : '../static/imgs/kameS.png';
@@ -82,6 +86,9 @@
                 this.marker.setOpacity(0.25);
                 this.marker.bindPopup(this.profeel.name, {});
                 this.marker.bindTooltip(this.profeel.name, {});
+                this.marker.on('click', function(e){
+                    console.log('counter = ' + self.counter); // Wao!
+                });
             }
         }
 
@@ -121,7 +128,7 @@
                 } else {
                     const profeel = new Profeel(p.name, p.callsign, p.imo, p.AISclass, p.shipType);
                     const location = new Location(l.lon, l.lat, l.sog, l.hdg, l.sv);
-                    const vessel = new Vessel(profeel, location, at);
+                    const vessel = new Vessel(mmsi, profeel, location, at);
                     vessel.marker.addTo(this.map);
                     this.vessel[mmsi] = vessel;
                     console.log('+++ ' + mmsi + '(' + profeel.name + ')' + ' was debut');
@@ -134,7 +141,7 @@
                     const target = this.vessel[mmsi];
                     target.counter++;
                     const duration = target.profeel.AISclass === 'A' ? 500 : 1000;
-                    const opacity = location.sog > 2 ? 1.0 : 0.5;
+                    const opacity = location.sog > 1.5 ? 1.0 : 0.5;
                     target.marker.setOpacity(opacity);
                     target.marker.setRotationAngle(location.hdg);
                     const lonlat = L.latLng(location.lat, location.lon);
@@ -170,7 +177,7 @@
         }).done(function (data) {
             // console.log(data);
             for (let k in data) {
-                const vessel = new Vessel(data[k].profeel, data[k].location, data[k].at);
+                const vessel = new Vessel(k, data[k].profeel, data[k].location, data[k].at);
                 // main.vessel[k] = vessel;
                 // vessel.marker.addTo(main.map);
                 main.append(k, data[k].profeel, data[k].location, data[k].at)
