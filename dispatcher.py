@@ -30,7 +30,7 @@ class Header(object):
 
 
 @dataclass()
-class Result(object):
+class DispatchResult(object):
     header: Header
     body: Dict[str, any]
     completed: bool
@@ -61,31 +61,33 @@ class Dispatcher(object):
 
         self.save24: Dict[str, dict] = {}
 
-    def parse(self, *, payload: str) -> Result:
-        header = self.header.parse(payload=payload)
-        result = Result(header=Header(type=header['type'], repeat=header['repeat'], mmsi=header['mmsi']), body={},
-                        completed=True, support=True)
+    def parse(self, *, payload: str) -> DispatchResult:
+        header = self.header.parse(payload=payload).body
+        result = DispatchResult(header=Header(type=header['type'], repeat=header['repeat'], mmsi=header['mmsi']), body={},
+                                completed=True, support=True)
         if 'type' in header:
             thisType = header['type']
             thisMMSI = header['mmsi']
             if thisType in (1, 2, 3):
                 s = self.type1to3.parse(payload=payload)
-                result.body = s
-                # print('Type[%d] = %s' % (thisType, s))
+                result.body = s.body
+
+                # ooo = self.type1to3.disassemble(source=s)
+                # print(ooo)
 
             elif thisType in [4, 11]:
                 s = self.type4and11.parse(payload=payload)
-                result.body = s
+                result.body = s.body
                 # print('Type[%d] = %s' % (thisType, s))
 
             elif thisType == 5:
                 s = self.type5.parse(payload=payload)
-                result.body = s
+                result.body = s.body
                 # print('Type[%d] = %s' % (thisType, s))
 
             elif thisType == 6:
                 s = self.type6.parse(payload=payload)
-                result.body = s
+                result.body = s.body
                 # print('Type[%d] = %s' % (thisType, s))
 
             elif thisType in [7, 13]:
@@ -96,12 +98,12 @@ class Dispatcher(object):
 
             elif thisType == 12:
                 s = self.type12.parse(payload=payload)
-                result.body = s
+                result.body = s.body
                 # print('Type[%d] = %s' % (thisType, s))
 
             elif thisType == 14:
                 s = self.type14.parse(payload=payload)
-                result.body = s
+                result.body = s.body
                 # print('Type[%d] = %s' % (thisType, s))
 
             elif thisType == 15:
@@ -109,31 +111,31 @@ class Dispatcher(object):
 
             elif thisType == 16:
                 s = self.type16.parse(payload=payload)
-                result.body = s
+                result.body = s.body
                 # print('Type[%d] = %s' % (thisType, s))
 
             elif thisType == 17:
                 s = self.type17.parse(payload=payload)
-                result.body = s
+                result.body = s.body
                 # print('Type[%d] = %s' % (thisType, s))
 
             elif thisType == 18:
                 s = self.type18.parse(payload=payload)
-                result.body = s
+                result.body = s.body
                 # print('Type[%d] = %s' % (thisType, s))
             elif thisType == 19:
                 s = self.type19.parse(payload=payload)
-                result.body = s
+                result.body = s.body
                 # print('Type[%d] = %s' % (thisType, s))
 
             elif thisType == 20:
                 s = self.type20.parse(payload=payload)
-                result.body = s
+                result.body = s.body
                 # print('Type[%d] = %s' % (thisType, s))
 
             elif thisType == 21:
                 s = self.type21.parse(payload=payload)
-                result.body = s
+                result.body = s.body
                 # print('Type[%d] = %s' % (thisType, s))
 
             elif thisType == 24:
@@ -143,10 +145,10 @@ class Dispatcher(object):
 
                 target = self.save24[thisMMSI]
 
-                partA = self.type24A.parse(payload=payload)
+                partA = self.type24A.parse(payload=payload).body
                 if partA and partA['partno'] == 0:
                     target['A'] = partA
-                partB = self.type24B.parse(payload=payload)
+                partB = self.type24B.parse(payload=payload).body
                 if partB and partB['partno'] == 1:
                     target['B'] = partB
 
@@ -162,7 +164,7 @@ class Dispatcher(object):
 
             elif thisType == 27:
                 s = self.type27.parse(payload=payload)
-                result.body = s
+                result.body = s.body
 
             else:
                 result.completed = False

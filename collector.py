@@ -14,7 +14,7 @@ from datetime import datetime as dt
 import json
 import responder
 
-from dispatcher import Dispatcher, Result
+from dispatcher import Dispatcher, DispatchResult
 from websocketServer import WebsocketServer
 from map import Map
 from gis import GISLib
@@ -218,7 +218,7 @@ class Collector(Thread):
     def run(self) -> None:
         self.t.start()
         while True:
-            data: Result = self.qp.get()
+            data: DispatchResult = self.qp.get()
             self.entry(data=data)
 
     def sendProfeel(self, *, mmsi: int, profeel: Profeel):
@@ -285,7 +285,7 @@ class Collector(Thread):
                     self.infoQue.put(info)
                     logger.error('--- %d (%s) was expired' % (k, v))
 
-    def entry(self, *, data: Result):
+    def entry(self, *, data: DispatchResult):
         now = dt.now()
         with self.locker:
             header = data.header

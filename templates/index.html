@@ -64,7 +64,6 @@
                 this.at = at;
                 this.profeel = profeel;
                 this.location = location;
-                this.showme = false;
                 this.counter = 0;
 
                 let img = '../static/imgs/kaniS.png';
@@ -78,11 +77,15 @@
                     } else if ((profeel.shipType / 10) === 5) {
                         img = '../static/imgs/daruma.png';
                     } else if ((profeel.shipType / 10) === 3) {
-                        img = '../static/imgs/fish.png';
+                        img = '../static/imgs/55.png';
+                    }
+                    else if ((profeel.shipType / 10) === 6) {
+                        img = '../static/imgs/smile.png';
                     }
                 }
+                this.defaultImage = img;
                 this.icon = L.icon({
-                    iconUrl: img,
+                    iconUrl: this.defaultImage,
                     // className: 'tako',
                 });
 

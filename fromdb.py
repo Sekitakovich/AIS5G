@@ -8,7 +8,7 @@ from serial import Serial
 from contextlib import closing
 import socket
 
-from dispatcher import Dispatcher, Result
+from dispatcher import Dispatcher, DispatchResult
 
 
 class NMEA(object):

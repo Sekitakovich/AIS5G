@@ -12,7 +12,7 @@ from dataclasses import dataclass, asdict
 from typing import Dict, List
 from datetime import datetime as dt
 
-from dispatcher import Dispatcher, Result
+from dispatcher import Dispatcher, DispatchResult
 
 
 class fromUDP(Process):
@@ -222,7 +222,7 @@ if __name__ == '__main__':
                     logger.error('--- %d (%s) was expired' % (k, v))
 
 
-    def entry(*, data: Result):
+    def entry(*, data: DispatchResult):
         now = dt.now()
         with locker:
             header = data.header
@@ -279,5 +279,5 @@ if __name__ == '__main__':
     t.start()
 
     while True:
-        data: Result = qp.get()
+        data: DispatchResult = qp.get()
         entry(data=data)

@@ -2,6 +2,8 @@ from typing import Dict
 from dataclasses import dataclass, field
 from loguru import logger
 
+from common import Location, Profeel
+
 @dataclass()
 class ParseResult(object):
     completed: bool = True
@@ -27,15 +29,11 @@ class Engine(object):
 
         self.member: Dict[str, Member] = {}  # to be override
 
-    # def isValidPyaload(self, *, src: str):  # srcに変な文字が含まれていたらFalseを返す
-    #
-    #     return np.all(np.in1d(np.fromstring(src, dtype=np.uint8), self.checkTable))
-    #
     def convert_complement_on_two_into_decimal(self, *, bits: str):  # 2018-12-21 orz ...
 
         return -int(bits[0]) << len(bits) | int(bits, 2)
 
-    def parse(self, *, payload: str) -> Dict[str, any]:
+    def parse(self, *, payload: str) -> ParseResult:
 
         pr = ParseResult()  # challenge
 
@@ -102,4 +100,4 @@ class Engine(object):
         if pr.completed:
             pr.body = result
 
-        return result
+        return pr

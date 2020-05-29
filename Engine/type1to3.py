@@ -1,6 +1,8 @@
 from typing import Dict
 from Engine.template import Engine, Member
 
+from common import Location
+
 
 class Structure(Engine):
 
@@ -25,3 +27,4 @@ class Structure(Engine):
             'raim': Member(type='b', offset=146, length=1),
             'radio': Member(type='u', offset=147, length=19),
         }
+
