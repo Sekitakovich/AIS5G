@@ -1,6 +1,6 @@
 from typing import Dict
 from loguru import logger
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from Engine.header import Structure as CommonHeader
 from Engine.type1to3 import Structure as Type1to3
@@ -24,17 +24,18 @@ from Engine.type27 import Structure as Type27
 
 @dataclass()
 class Header(object):
-    type: int
-    repeat: int
-    mmsi: int
+    type: int = 0
+    repeat: int = 0
+    mmsi: int = 0
 
 
 @dataclass()
 class DispatchResult(object):
-    header: Header
-    body: Dict[str, any]
-    completed: bool
-    support: bool
+    header: Header = Header()
+    body: Dict[str, any] = field(default_factory=dict)
+    completed: bool = True
+    support: bool = True
+    reason: str = ''
 
 
 class Dispatcher(object):
@@ -62,33 +63,48 @@ class Dispatcher(object):
         self.save24: Dict[str, dict] = {}
 
     def parse(self, *, payload: str) -> DispatchResult:
-        header = self.header.parse(payload=payload).body
-        result = DispatchResult(header=Header(type=header['type'], repeat=header['repeat'], mmsi=header['mmsi']), body={},
-                                completed=True, support=True)
-        if 'type' in header:
+        result = DispatchResult()
+        pr = self.header.parse(payload=payload)
+        if pr.completed:
+            header = pr.body
+            result.header = Header(mmsi=header['mmsi'], repeat=header['repeat'], type=header['type'])
             thisType = header['type']
             thisMMSI = header['mmsi']
             if thisType in (1, 2, 3):
                 s = self.type1to3.parse(payload=payload)
-                result.body = s.body
-
-                # ooo = self.type1to3.disassemble(source=s)
-                # print(ooo)
+                if s.completed:
+                    result.body = s.body
+                else:
+                    result.completed = False
+                    result.reason = s.reason
+                    logger.error(s.reason)
 
             elif thisType in [4, 11]:
                 s = self.type4and11.parse(payload=payload)
-                result.body = s.body
-                # print('Type[%d] = %s' % (thisType, s))
+                if s.completed:
+                    result.body = s.body
+                else:
+                    result.completed = False
+                    result.reason = s.reason
+                    logger.error(s.reason)
 
             elif thisType == 5:
                 s = self.type5.parse(payload=payload)
-                result.body = s.body
-                # print('Type[%d] = %s' % (thisType, s))
+                if s.completed:
+                    result.body = s.body
+                else:
+                    result.completed = False
+                    result.reason = s.reason
+                    logger.error(s.reason)
 
             elif thisType == 6:
                 s = self.type6.parse(payload=payload)
-                result.body = s.body
-                # print('Type[%d] = %s' % (thisType, s))
+                if s.completed:
+                    result.body = s.body
+                else:
+                    result.completed = False
+                    result.reason = s.reason
+                    logger.error(s.reason)
 
             elif thisType in [7, 13]:
                 result.support = False
@@ -98,45 +114,78 @@ class Dispatcher(object):
 
             elif thisType == 12:
                 s = self.type12.parse(payload=payload)
-                result.body = s.body
-                # print('Type[%d] = %s' % (thisType, s))
+                if s.completed:
+                    result.body = s.body
+                else:
+                    result.completed = False
+                    result.reason = s.reason
+                    logger.error(s.reason)
 
             elif thisType == 14:
                 s = self.type14.parse(payload=payload)
-                result.body = s.body
-                # print('Type[%d] = %s' % (thisType, s))
+                if s.completed:
+                    result.body = s.body
+                else:
+                    result.completed = False
+                    result.reason = s.reason
+                    logger.error(s.reason)
 
             elif thisType == 15:
                 result.support = False
 
             elif thisType == 16:
                 s = self.type16.parse(payload=payload)
-                result.body = s.body
-                # print('Type[%d] = %s' % (thisType, s))
+                if s.completed:
+                    result.body = s.body
+                else:
+                    result.completed = False
+                    result.reason = s.reason
+                    logger.error(s.reason)
 
             elif thisType == 17:
                 s = self.type17.parse(payload=payload)
-                result.body = s.body
-                # print('Type[%d] = %s' % (thisType, s))
+                if s.completed:
+                    result.body = s.body
+                else:
+                    result.completed = False
+                    result.reason = s.reason
+                    logger.error(s.reason)
 
             elif thisType == 18:
                 s = self.type18.parse(payload=payload)
-                result.body = s.body
-                # print('Type[%d] = %s' % (thisType, s))
+                if s.completed:
+                    result.body = s.body
+                else:
+                    result.completed = False
+                    result.reason = s.reason
+                    logger.error(s.reason)
+
             elif thisType == 19:
                 s = self.type19.parse(payload=payload)
-                result.body = s.body
-                # print('Type[%d] = %s' % (thisType, s))
+                if s.completed:
+                    result.body = s.body
+                else:
+                    result.completed = False
+                    result.reason = s.reason
+                    logger.error(s.reason)
 
             elif thisType == 20:
                 s = self.type20.parse(payload=payload)
-                result.body = s.body
-                # print('Type[%d] = %s' % (thisType, s))
+                if s.completed:
+                    result.body = s.body
+                else:
+                    result.completed = False
+                    result.reason = s.reason
+                    logger.error(s.reason)
 
             elif thisType == 21:
                 s = self.type21.parse(payload=payload)
-                result.body = s.body
-                # print('Type[%d] = %s' % (thisType, s))
+                if s.completed:
+                    result.body = s.body
+                else:
+                    result.completed = False
+                    result.reason = s.reason
+                    logger.error(s.reason)
 
             elif thisType == 24:
 
@@ -145,26 +194,44 @@ class Dispatcher(object):
 
                 target = self.save24[thisMMSI]
 
-                partA = self.type24A.parse(payload=payload).body
-                if partA and partA['partno'] == 0:
-                    target['A'] = partA
-                partB = self.type24B.parse(payload=payload).body
-                if partB and partB['partno'] == 1:
-                    target['B'] = partB
+                ooo = self.type24A.parse(payload=payload)
+                if ooo.completed:
+                    partA = ooo.body
+                    if partA and partA['partno'] == 0:
+                        target['A'] = partA
+                else:
+                    result.completed = False
+                    result.reason = ooo.reason
+                    logger.error(ooo.reason)
+
+                ooo = self.type24B.parse(payload=payload)
+                if ooo.completed:
+                    partB = ooo.body
+                    if partB and partB['partno'] == 1:
+                        target['B'] = partB
+                else:
+                    result.completed = False
+                    result.reason = ooo.reason
+                    logger.error(ooo.reason)
 
                 if 'A' in target and 'B' in target:
                     s = target['A']
                     s.update(target['B'])
                     del (self.save24[thisMMSI])
                     result.body = s
-                    # print('Type[%d] = %s' % (thisType, s))
+                    result.completed = True
                 else:
                     # result['completed'] = False
                     result.completed = False
 
             elif thisType == 27:
                 s = self.type27.parse(payload=payload)
-                result.body = s.body
+                if s.completed:
+                    result.body = s.body
+                else:
+                    result.completed = False
+                    result.reason = s.reason
+                    logger.error(s.reason)
 
             else:
                 result.completed = False
@@ -173,7 +240,7 @@ class Dispatcher(object):
                 pass
         else:
             result.completed = False
-            raise ValueError('No valid type')
+            raise ValueError('parse error')
             # logger.critical('No type')
             pass
 
@@ -184,7 +251,7 @@ if __name__ == '__main__':
 
     dispatcher = Dispatcher()
 
-    with open('payload.txt', 'rt') as f:
+    with open('Emulator/payload.txt', 'rt') as f:
         for p in f.read().split('\n'):
             ooo = dispatcher.parse(payload=p)
             if 'header' in ooo.keys() and 'body' in ooo.keys():

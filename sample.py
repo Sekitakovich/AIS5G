@@ -153,7 +153,7 @@ if __name__ == '__main__':
 
     dispatcher = Dispatcher()
 
-    with open('payload.txt', 'rt') as f:
+    with open('Emulator/payload.txt', 'rt') as f:
         for p in f.read().split('\n'):
             ooo = dispatcher.parse(payload=p)
             if 'header' in ooo.keys() and 'body' in ooo.keys():

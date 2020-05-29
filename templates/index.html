@@ -171,7 +171,7 @@
                         // console.log('>>> ' + mmsi + ' was moved ' + d)
                         target.counter++;
                         const duration = target.profeel.AISclass === 'A' ? 500 : 1000;
-                        const opacity = location['sog'] > 1.0 ? 1.0 : 0.5;
+                        const opacity = location['sog'] > 0.5 ? 1.0 : 0.5;
                         target.marker.setOpacity(opacity);
                         target.marker.setRotationAngle(location['hdg']);
                         const lonlat = L.latLng(location['lat'], location['lon']);

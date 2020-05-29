@@ -43,6 +43,8 @@ class Engine(object):
         try:
             src = ''.join([self.bitstring[c] for c in payload])
         except (KeyError,) as e:
+            pr.completed = False
+            pr.reason = e
             logger.error(e)
         else:
             for k, v in table.items():
