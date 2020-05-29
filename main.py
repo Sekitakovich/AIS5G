@@ -294,8 +294,6 @@ class Collector(Thread):
                             logger.success('!!! %d(%s) was Completed' % (mmsi, target.profeel.name))
 
             elif header.type in [1, 2, 3, 18, 19]:
-                if header.type == 19:
-                    logger.debug('Found 19 at %d' % mmsi)
                 degLat = int(body['lat'])
                 degLon = int(body['lon'])
                 lat = float(degLat / 600000)
@@ -312,8 +310,9 @@ class Collector(Thread):
                         hdg = 0
                 else:
                     hdg = angle
+                status = int(body['status']) if 'status' in body else 0
 
-                location = Location(lat=lat, lon=lon, sog=sog, hdg=hdg, sv=sv)
+                location = Location(lat=lat, lon=lon, sog=sog, hdg=hdg, sv=sv, status=status)
 
                 if mmsi in self.vessel:
                     target = self.vessel[mmsi]

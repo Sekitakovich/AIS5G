@@ -18,6 +18,7 @@ class Location(object):
     sog: float = 0.0
     hdg: int = 0
     sv: bool = True
+    status: int =0
 
 
 @dataclass()

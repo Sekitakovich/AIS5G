@@ -75,18 +75,19 @@
                     } else if ((profeel.shipType / 10) === 7) {
                         img = '../static/imgs/kameS.png';
                     } else if ((profeel.shipType / 10) === 5) {
-                        img = '../static/imgs/daruma.png';
+                        img = '../static/imgs/rocket.png';
                     } else if ((profeel.shipType / 10) === 3) {
                         img = '../static/imgs/55.png';
-                    }
-                    else if ((profeel.shipType / 10) === 6) {
+                    } else if ((profeel.shipType / 10) === 6) {
                         img = '../static/imgs/smile.png';
                     }
                 }
-                this.defaultImage = img;
                 this.icon = L.icon({
-                    iconUrl: this.defaultImage,
+                    iconUrl: img,
                     // className: 'tako',
+                });
+                this.stopicon = L.icon({
+                    iconUrl: '../static/imgs/notEnter.png',
                 });
 
                 this.marker = L.Marker.movingMarker([[this.location.lat, this.location.lon]], [], {
@@ -153,7 +154,7 @@
             }
 
 // ---------------------------------------------------------------------
-            move(mmsi, location) {
+            move(mmsi, location) { //console.log(location)
                 if (mmsi in this.vessel) {
                     const target = this.vessel[mmsi];
 
@@ -161,6 +162,12 @@
                     // console.log(location)
                     const d = this.distance(top['lat'], top['lng'], location['lat'], location['lon']);
                     if (d) {
+                        const status = parseInt(location['status']);
+                        if (status === 1 || status === 2 || status === 3) {
+                            target.marker.setIcon(target.stopicon);
+                        } else {
+                            target.marker.setIcon(target.icon);
+                        }
                         // console.log('>>> ' + mmsi + ' was moved ' + d)
                         target.counter++;
                         const duration = target.profeel.AISclass === 'A' ? 500 : 1000;
