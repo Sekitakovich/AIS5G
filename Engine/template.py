@@ -1,6 +1,12 @@
 from typing import Dict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from loguru import logger
+
+@dataclass()
+class ParseResult(object):
+    completed: bool = True
+    reason: str = ''
+    body: Dict[str, any] = field(default_factory=dict)
 
 
 @dataclass()
@@ -30,6 +36,8 @@ class Engine(object):
         return -int(bits[0]) << len(bits) | int(bits, 2)
 
     def parse(self, *, payload: str) -> Dict[str, any]:
+
+        pr = ParseResult()  # challenge
 
         result: Dict[str, any] = {}
         table = self.member
@@ -83,10 +91,15 @@ class Engine(object):
                         elif type[:1] == 'a':  # Array boundary
                             pass
                     except Exception as e:
+                        pr.completed = False
+                        pr.reason = e
                         logger.critical(e)
                         break
                 else:
                     # logger.debug('bits empty')
                     pass
+
+        if pr.completed:
+            pr.body = result
 
         return result
