@@ -183,6 +183,14 @@
                 // console.log('+++ ' + mmsi + ' = ' + profeel.name);
             }
 
+            bye(mmsi) {
+                if (mmsi in this.vessel) {
+                    const profeel = this.vessel[mmsi].profeel;
+                    this.talker.text = 'Oh! ' + profeel.name + ' was lost';
+                    speechSynthesis.speak(this.talker);
+                }
+            }
+
 // ---------------------------------------------------------------------
             append(mmsi, location) {
                 if (mmsi in this.vessel) {
@@ -311,6 +319,7 @@
                         // console.log(location);
                         break;
                     case 'retire':
+                        main.bye(mmsi);
                         main.expire(mmsi);
                         break;
                     default:
