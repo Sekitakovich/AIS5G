@@ -30,6 +30,7 @@
 </head>
 <body>
 <div id="map" class="map"></div>
+<input type="button" value="speak">
 <script type="text/javascript">
     jQuery(document).ready(function () {
         console.log('start');
@@ -68,16 +69,19 @@
                 this.counter = 0;
 
                 this.icon = L.icon({
-                    iconUrl: '../static/imgs/question.png',
+                    iconUrl: '../static/imgs/ufo.png',
                     iconSize: [16, 16],
                 });
+
+                // jQuery(this.icon).addClass('tako');
+
                 this.marker = L.Marker.movingMarker([[0, 0]], [], {
                     icon: this.icon,
                     rotationAngle: 0,
-                    bounceOnAdd: true,
+                    bounceOnAdd: false,
                     bounceOnAddOptions: {
-                        height: 32,
-                        duration: 500,
+                        height: 128,
+                        duration: 1000,
                         loop: 1,
                     },
                 });
@@ -142,6 +146,8 @@
                     maxZoom: 19,
                 });
                 this.tileLayer.addTo(this.map);
+                this.talker = new SpeechSynthesisUtterance();
+                this.talker.lang = 'en-US';
 
                 // this.woman = L.icon({
                 //     iconUrl: "../static/images/woman.gif",
@@ -155,10 +161,14 @@
                 if (mmsi in this.vessel) {
 
                 } else {
-                    this.vessel[mmsi] = new Vessel()
+                    this.vessel[mmsi] = new Vessel();
+                    console.log('=== ' + mmsi + ' was matched with ' + profeel.name);
+                    this.talker.text = 'I found ' + profeel.name;
+                    speechSynthesis.speak(this.talker);
                 }
                 this.vessel[mmsi].setProfeel(profeel);
                 this.vessel[mmsi].marker.addTo(this.map);
+                // this.vessel[mmsi].marker.bounce()
                 // console.log('+++ ' + mmsi + ' = ' + profeel.name);
             }
 
@@ -166,7 +176,8 @@
                 if (mmsi in this.vessel) {
 
                 } else {
-                    this.vessel[mmsi] = new Vessel()
+                    this.vessel[mmsi] = new Vessel();
+                    // console.log('+++ Found ' + mmsi);
                 }
                 this.vessel[mmsi].setLocation(location);
                 // console.log('+++ ' + mmsi + ' = ' + profeel.name);
@@ -222,6 +233,8 @@
                         }
                         // console.log('distance = ' + d)
                     }
+                } else {
+                    this.setLocation(mmsi, location);
                 }
             }
 
@@ -253,7 +266,6 @@
 // -------------------------------------------------------------------------------------------------
         const main = new Main();
 // -------------------------------------------------------------------------------------------------
-        let standBy = false;
         jQuery.ajax({
             url: 'shiplist',
             type: 'GET',
@@ -261,12 +273,9 @@
         }).done(function (data) { //console.log(data)
             for (let k in data) { //console.log(data[k]['profeel'])
                 main.setProfeel(k, data[k]['profeel']);
-                // main.setLocation(k, data[k]['location']);
                 main.move(k, data[k]['location']);
             }
-            standBy = true;
-            // console.log(main.vessel)
-            // alert('pause')
+            console.log('### preload completed');
         });
 // -------------------------------------------------------------------------------------------------
 
@@ -280,34 +289,36 @@
             console.log('not Active');
         });
 
-        const wsURL = 'ws://' + location.host + '/ws'
-        const ws = new ReconnectingWebSocket(wsURL);
-        ws.onmessage = function (message) {
-            const data = JSON.parse(message['data']);
-            const mmsi = data['mmsi'];
-            const type = data['type'];
-            switch (type) {
-                // case 'debut':
-                //     main.append(mmsi, data['profeel'], data['location'], data['at']);
-                //     break;
-                case 'profeel':
-                    const profeel = data['profeel'];
-                    main.setProfeel(mmsi, profeel);
-                    console.log('+++ ' + mmsi + ' = ' + profeel.name);
-                    break;
-                case 'live':
-                    const location = data['location'];
-                    // main.append(mmsi, location);
-                    main.move(mmsi, location);
-                    // console.log(location);
-                    break;
-                case 'retire':
-                    main.expire(mmsi);
-                    break;
-                default:
-                    break;
+        const startSession = function () {
+            const wsURL = 'ws://' + location.host + '/ws'
+            const ws = new ReconnectingWebSocket(wsURL);
+            ws.onmessage = function (message) {
+                const data = JSON.parse(message['data']);
+                const mmsi = data['mmsi'];
+                const type = data['type'];
+                switch (type) {
+                    // case 'debut':
+                    //     main.append(mmsi, data['profeel'], data['location'], data['at']);
+                    //     break;
+                    case 'profeel':
+                        const profeel = data['profeel'];
+                        main.setProfeel(mmsi, profeel);
+                        break;
+                    case 'live':
+                        const location = data['location'];
+                        // main.append(mmsi, location);
+                        main.move(mmsi, location);
+                        // console.log(location);
+                        break;
+                    case 'retire':
+                        main.expire(mmsi);
+                        break;
+                    default:
+                        break;
+                }
             }
         }
+        startSession();
     });
 </script>
 </body>
