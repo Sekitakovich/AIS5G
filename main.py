@@ -197,17 +197,27 @@ class Collector(Thread):
             data: DispatchResult = self.qp.get()
             self.entry(data=data)
 
-    def sendFull(self, *, mmsi: int):
-        target = self.vessel[mmsi]
+    # def sendFull(self, *, mmsi: int):
+    #     target = self.vessel[mmsi]
+    #     info: Dict[str, any] = {
+    #         'type': 'debut',
+    #         'mmsi': mmsi,
+    #         'profeel': asdict(target.profeel),
+    #         'location': asdict(target.location),
+    #         'at': dt.now().strftime(self.tsFormat),
+    #         'isCustomer': False,
+    #     }
+    #     self.infoQue.put(info)
+    #
+    def sendProfeel(self, *, mmsi: int, profeel: Profeel, at: dt):
         info: Dict[str, any] = {
-            'type': 'debut',
+            'type': 'profeel',
             'mmsi': mmsi,
-            'profeel': asdict(target.profeel),
-            'location': asdict(target.location),
-            'at': dt.now().strftime(self.tsFormat),
-            'isCustomer': False,
+            'profeel': asdict(profeel),
+            'at': at.strftime(self.tsFormat),
         }
         self.infoQue.put(info)
+        pass
 
     def sendLocation(self, *, mmsi: int, location: Location, at: dt):
         info: Dict[str, any] = {
@@ -263,91 +273,99 @@ class Collector(Thread):
                     logger.error('--- %d (%s) was expired' % (k, v))
 
     def entry(self, *, data: DispatchResult):
-        now = dt.now()
-        with self.locker:
-            header = data.header
-            mmsi = header.mmsi
-            body = data.body
+        if data.completed:
+            now = dt.now()
+            with self.locker:
+                header = data.header
+                mmsi = header.mmsi
+                body = data.body
 
-            if header.type in [5, 19, 24]:
-                name = body['shipname']
-                imo = body['imo'] if 'imo' in body else ''
-                callsign = body['callsign'] if 'callsign' in body else ''
-                shiptype = body['shiptype']
-                AISclass = 'A' if header.type == 5 else 'B'
-                profeel = Profeel(name=name, imo=imo, callsign=callsign, AISclass=AISclass, shipType=shiptype)
+                if header.type in [5, 19, 24]:
+                    name = body['shipname']
+                    imo = body['imo'] if 'imo' in body else ''
+                    callsign = body['callsign'] if 'callsign' in body else ''
+                    shiptype = body['shiptype']
+                    AISclass = 'A' if header.type == 5 else 'B'
+                    profeel = Profeel(name=name, imo=imo, callsign=callsign, AISclass=AISclass, shipType=shiptype)
 
-                if mmsi not in self.vessel:
-                    self.vessel[mmsi] = Vessel(profeel=profeel, pv=True, at=now)
-                    self.entries += 1
-                    # logger.debug('+++ append %d (%s) from profeel' % (mmsi, name))
-                else:
-                    target = self.vessel[mmsi]
-                    secs = (now - target.at).total_seconds()
-                    target.profeel = profeel
-                    target.pv = True
-                    target.at = now
-                    if target.lv:
-                        if target.ready is False:
-                            target.ready = True
-                            self.sendFull(mmsi=mmsi)
-                            logger.success('!!! %d(%s) was Completed' % (mmsi, target.profeel.name))
-
-            elif header.type in [1, 2, 3, 18, 19]:
-                degLat = int(body['lat'])
-                degLon = int(body['lon'])
-                lat = float(degLat / 600000)
-                lon = float(degLon / 600000)
-                sog = float(body['speed'])
-                sv = False if sog == 1023 else True
-                angle = int(body['heading'])
-                if angle == 511:
-                    if mmsi in self.vessel:
-                        last = self.vessel[mmsi].location
-                        hdg = GISLib.calcHeadingWithF(latS=last.lat, lonS=last.lon, latE=lat, lonE=lon)
-                        pass
+                    self.sendProfeel(mmsi=mmsi, profeel=profeel, at=now)
+                    if mmsi not in self.vessel:
+                        self.vessel[mmsi] = Vessel(profeel=profeel, pv=True, at=now)
+                        self.entries += 1
+                        # logger.debug('+++ append %d (%s) from profeel' % (mmsi, name))
                     else:
-                        hdg = 0
-                else:
-                    hdg = angle
-                status = int(body['status']) if 'status' in body else 0
+                        target = self.vessel[mmsi]
+                        secs = (now - target.at).total_seconds()
+                        target.profeel = profeel
+                        target.pv = True
+                        target.at = now
+                        if target.lv:
+                            if target.ready is False:
+                                target.ready = True
+                                # self.sendFull(mmsi=mmsi)
+                                logger.success('!!! %d(%s) was Completed' % (mmsi, target.profeel.name))
 
-                location = Location(lat=lat, lon=lon, sog=sog, hdg=hdg, sv=sv, status=status)
-
-                if mmsi in self.vessel:
-                    target = self.vessel[mmsi]
-                    distance = GISLib.flatDistance(x1=target.location.lat, x2=location.lat, y1=target.location.lon, y2=location.lon)
-                    target.location = location
-                    target.at = now
-                    target.lv = True
-                    if target.pv:
-                        if target.ready is False:
-                            target.ready = True
-                            logger.success('!!! %d(%s) was Completed' % (mmsi, target.profeel.name))
-                            self.sendFull(mmsi=mmsi)
+                elif header.type in [1, 2, 3, 18, 19]:
+                    degLat = int(body['lat'])
+                    degLon = int(body['lon'])
+                    lat = float(degLat / 600000)
+                    lon = float(degLon / 600000)
+                    sog = float(body['speed'])
+                    sv = False if sog == 1023 else True
+                    angle = int(body['heading'])
+                    if angle == 511:
+                        if mmsi in self.vessel:
+                            last = self.vessel[mmsi].location
+                            hdg = GISLib.calcHeadingWithF(latS=last.lat, lonS=last.lon, latE=lat, lonE=lon)
+                            pass
                         else:
-                            if distance:
-                                self.sendLocation(mmsi=mmsi, location=location, at=now)
-                            else:
-                                logger.warning('Zero distance at %d (%s)' % (mmsi, target.profeel.name))
+                            hdg = 0
                     else:
-                        pass
+                        hdg = angle
+                    status = int(body['status']) if 'status' in body else 0
 
-                else:
-                    self.vessel[mmsi] = Vessel(location=location, lv=True, at=now)
-                    self.entries += 1
-                    # target = self.vessel[mmsi]
-                    # if target.ready:
-                    #     if location.lat != target.location.lat or location.lon != target.location.lon:
-                    #         self.sendLocation(mmsi=mmsi, location=location, at=now)
-                    #     else:
-                    #         logger.debug('%d was not moved' % mmsi)
-                # passed = (now - target.lastSend).total_seconds()
-                # if passed >= 1:
-                #     self.sendLocation(mmsi=mmsi, location=location, at=now)
-                #     target.lastSend = now
-                # else:
-                #     logger.error('!!! too rapid(%f) at %s %s' % (passed, target.profeel.name, header))
+                    location = Location(lat=lat, lon=lon, sog=sog, hdg=hdg, sv=sv, status=status)
+
+                    if mmsi in self.vessel:
+                        target = self.vessel[mmsi]
+                        distance = GISLib.flatDistance(x1=target.location.lat, x2=location.lat, y1=target.location.lon, y2=location.lon)
+                        if distance:
+                            self.sendLocation(mmsi=mmsi, location=location, at=now)
+                        else:
+                            logger.warning('Zero distance at %d (%s)' % (mmsi, target.profeel.name))
+                        target.location = location
+                        target.at = now
+                        target.lv = True
+                        if target.pv:
+                            if target.ready is False:
+                                target.ready = True
+                                logger.success('!!! %d(%s) was Completed' % (mmsi, target.profeel.name))
+                                # self.sendFull(mmsi=mmsi)
+                            # else:
+                            #     if distance:
+                            #         self.sendLocation(mmsi=mmsi, location=location, at=now)
+                            #     else:
+                            #         logger.warning('Zero distance at %d (%s)' % (mmsi, target.profeel.name))
+                        else:
+                            pass
+
+                    else:
+                        self.vessel[mmsi] = Vessel(location=location, lv=True, at=now)
+                        self.entries += 1
+                        # target = self.vessel[mmsi]
+                        # if target.ready:
+                        #     if location.lat != target.location.lat or location.lon != target.location.lon:
+                        #         self.sendLocation(mmsi=mmsi, location=location, at=now)
+                        #     else:
+                        #         logger.debug('%d was not moved' % mmsi)
+                    # passed = (now - target.lastSend).total_seconds()
+                    # if passed >= 1:
+                    #     self.sendLocation(mmsi=mmsi, location=location, at=now)
+                    #     target.lastSend = now
+                    # else:
+                    #     logger.error('!!! too rapid(%f) at %s %s' % (passed, target.profeel.name, header))
+        else:
+            logger.error(data.reason)
 
 
 class Main(responder.API):

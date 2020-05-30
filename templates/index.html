@@ -57,40 +57,21 @@
 
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         class Vessel {
-            constructor(mmsi, profeel, location, at) {
+            // constructor(mmsi, profeel, location, at) {
+            constructor() {
 
                 const self = this; // mmm ...
 
-                this.at = at;
-                this.profeel = profeel;
-                this.location = location;
+                this.at = new Date();
+                this.P = false;
+                this.L = false;
                 this.counter = 0;
 
-                let img = '../static/imgs/kaniS.png';
-                if (profeel.AISclass !== 'A') {
-                    img = '../static/imgs/ant.png';
-                } else {
-                    if ((profeel.shipType / 10) === 8) {
-                        img = '../static/imgs/oil.png';
-                    } else if ((profeel.shipType / 10) === 7) {
-                        img = '../static/imgs/kameS.png';
-                    } else if ((profeel.shipType / 10) === 5) {
-                        img = '../static/imgs/rocket.png';
-                    } else if ((profeel.shipType / 10) === 3) {
-                        img = '../static/imgs/55.png';
-                    } else if ((profeel.shipType / 10) === 6) {
-                        img = '../static/imgs/smile.png';
-                    }
-                }
                 this.icon = L.icon({
-                    iconUrl: img,
-                    // className: 'tako',
+                    iconUrl: '../static/imgs/question.png',
+                    iconSize: [16, 16],
                 });
-                this.stopicon = L.icon({
-                    iconUrl: '../static/imgs/notEnter.png',
-                });
-
-                this.marker = L.Marker.movingMarker([[this.location.lat, this.location.lon]], [], {
+                this.marker = L.Marker.movingMarker([[0, 0]], [], {
                     icon: this.icon,
                     rotationAngle: 0,
                     bounceOnAdd: true,
@@ -101,11 +82,42 @@
                     },
                 });
                 this.marker.setOpacity(0.25);
-                this.marker.bindPopup(this.profeel.name, {});
-                this.marker.bindTooltip(this.profeel.name, {});
-                this.marker.on('click', function (e) {
-                    console.log('counter = ' + self.counter); // Wao!
+                this.stopicon = L.icon({
+                    iconUrl: '../static/imgs/notEnter.png',
                 });
+            }
+
+            setProfeel(profeel) { //console.log(profeel)
+                this.profeel = profeel;
+                if (this.P === false) {
+                    this.P = true;
+                    let img = '../static/imgs/kaniS.png';
+                    if (profeel.AISclass !== 'A') {
+                        img = '../static/imgs/ant.png';
+                    } else {
+                        if ((profeel.shipType / 10) === 8) {
+                            img = '../static/imgs/oil.png';
+                        } else if ((profeel.shipType / 10) === 7) {
+                            img = '../static/imgs/kameS.png';
+                        } else if ((profeel.shipType / 10) === 5) {
+                            img = '../static/imgs/rocket.png';
+                        } else if ((profeel.shipType / 10) === 3) {
+                            img = '../static/imgs/55.png';
+                        } else if ((profeel.shipType / 10) === 6) {
+                            img = '../static/imgs/smile.png';
+                        }
+                    }
+                    const newIcon = L.icon({iconUrl: img}); //console.log(newIcon)
+                    this.icon = newIcon; // console.log(this.icon)
+                }
+            }
+
+            setLocation(location) {
+                this.location = location;
+                this.counter++;
+                if (this.L === false) {
+                    this.L = true;
+                }
             }
         }
 
@@ -139,17 +151,37 @@
                 // this.wm.addTo(this.map);
             }
 
-// ---------------------------------------------------------------------
-            append(mmsi, p, l, at) {
+            setProfeel(mmsi, profeel) {
                 if (mmsi in this.vessel) {
 
                 } else {
-                    const profeel = new Profeel(p.name, p.callsign, p.imo, p.AISclass, p.shipType);
-                    const location = new Location(l.lon, l.lat, l.sog, l.hdg, l.sv);
-                    const vessel = new Vessel(mmsi, profeel, location, at);
+                    this.vessel[mmsi] = new Vessel()
+                }
+                this.vessel[mmsi].setProfeel(profeel);
+                this.vessel[mmsi].marker.addTo(this.map);
+                // console.log('+++ ' + mmsi + ' = ' + profeel.name);
+            }
+
+            setLocation(mmsi, location) {
+                if (mmsi in this.vessel) {
+
+                } else {
+                    this.vessel[mmsi] = new Vessel()
+                }
+                this.vessel[mmsi].setLocation(location);
+                // console.log('+++ ' + mmsi + ' = ' + profeel.name);
+            }
+
+// ---------------------------------------------------------------------
+            append(mmsi, location) {
+                if (mmsi in this.vessel) {
+
+                } else {
+                    const vessel = new Vessel();
+                    this.setLocation(mmsi, location);
                     vessel.marker.addTo(this.map);
                     this.vessel[mmsi] = vessel;
-                    console.log('+++ ' + mmsi + '(' + profeel.name + ')' + ' ' + profeel.shipType + ' was debut');
+                    // console.log('+++ ' + mmsi + ' was debut');
                 }
             }
 
@@ -170,15 +202,14 @@
                         }
                         // console.log('>>> ' + mmsi + ' was moved ' + d)
                         target.counter++;
-                        const duration = target.profeel.AISclass === 'A' ? 500 : 1000;
-                        if (location.status === 0) {
-                            target.marker.setRotationAngle(location['hdg']);
-                            target.marker.setOpacity(1.0);
-                       }
-                        else{
+                        const duration = 1000;
+                        if (target.P) {
+                            // const duration = target.profeel.AISclass === 'A' ? 500 : 1000;
                             const opacity = location['sog'] > 0.5 ? 1.0 : 0.5;
                             target.marker.setOpacity(opacity);
                         }
+                        target.marker.setRotationAngle(location['hdg']);
+                        target.marker.setOpacity(1.0);
                         const lonlat = L.latLng(location['lat'], location['lon']);
                         if (this.isWindowActive) {
                             target.marker.moveTo(lonlat, duration);
@@ -222,18 +253,20 @@
 // -------------------------------------------------------------------------------------------------
         const main = new Main();
 // -------------------------------------------------------------------------------------------------
+        let standBy = false;
         jQuery.ajax({
             url: 'shiplist',
             type: 'GET',
             dataType: 'json',
-        }).done(function (data) {
-            // console.log(data);
-            for (let k in data) {
-                const vessel = new Vessel(k, data[k].profeel, data[k].location, data[k].at);
-                // main.vessel[k] = vessel;
-                // vessel.marker.addTo(main.map);
-                main.append(k, data[k].profeel, data[k].location, data[k].at)
+        }).done(function (data) { //console.log(data)
+            for (let k in data) { //console.log(data[k]['profeel'])
+                main.setProfeel(k, data[k]['profeel']);
+                // main.setLocation(k, data[k]['location']);
+                main.move(k, data[k]['location']);
             }
+            standBy = true;
+            // console.log(main.vessel)
+            // alert('pause')
         });
 // -------------------------------------------------------------------------------------------------
 
@@ -254,11 +287,17 @@
             const mmsi = data['mmsi'];
             const type = data['type'];
             switch (type) {
-                case 'debut':
-                    main.append(mmsi, data['profeel'], data['location'], data['at']);
+                // case 'debut':
+                //     main.append(mmsi, data['profeel'], data['location'], data['at']);
+                //     break;
+                case 'profeel':
+                    const profeel = data['profeel'];
+                    main.setProfeel(mmsi, profeel);
+                    console.log('+++ ' + mmsi + ' = ' + profeel.name);
                     break;
                 case 'live':
                     const location = data['location'];
+                    // main.append(mmsi, location);
                     main.move(mmsi, location);
                     // console.log(location);
                     break;
