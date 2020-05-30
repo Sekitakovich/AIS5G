@@ -171,9 +171,14 @@
                         // console.log('>>> ' + mmsi + ' was moved ' + d)
                         target.counter++;
                         const duration = target.profeel.AISclass === 'A' ? 500 : 1000;
-                        const opacity = location['sog'] > 0.5 ? 1.0 : 0.5;
-                        target.marker.setOpacity(opacity);
-                        target.marker.setRotationAngle(location['hdg']);
+                        if (location.status === 0) {
+                            target.marker.setRotationAngle(location['hdg']);
+                            target.marker.setOpacity(1.0);
+                       }
+                        else{
+                            const opacity = location['sog'] > 0.5 ? 1.0 : 0.5;
+                            target.marker.setOpacity(opacity);
+                        }
                         const lonlat = L.latLng(location['lat'], location['lon']);
                         if (this.isWindowActive) {
                             target.marker.moveTo(lonlat, duration);
