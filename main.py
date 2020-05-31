@@ -409,6 +409,7 @@ class Main(responder.API):
         self.add_route('/', self.map.top)
         self.add_route('/shiplist', self.shipList)
         self.add_route('/classes.js', self.map.classes)
+        self.add_route('/main.js', self.map.main)
 
         self.run(address='0.0.0.0', port=port)
 

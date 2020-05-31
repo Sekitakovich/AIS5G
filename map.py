@@ -11,4 +11,6 @@ class Map(object):
     def classes(self, req: responder.Request, resp: responder.Response):
         resp.content = self.api.template('classes.js')
 
+    def main(self, req: responder.Request, resp: responder.Response):
+        resp.content = self.api.template('main.js')
 
