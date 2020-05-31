@@ -408,6 +408,7 @@ class Main(responder.API):
         self.map = Map(api=self)
         self.add_route('/', self.map.top)
         self.add_route('/shiplist', self.shipList)
+        self.add_route('/classes.js', self.map.classes)
 
         self.run(address='0.0.0.0', port=port)
 
@@ -418,7 +419,6 @@ class Main(responder.API):
     def entrance(self):
         while True:
             info = self.infoQueue.get()
-            # print(info)
             self.ws.bc(message=json.dumps(info))
 
 

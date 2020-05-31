@@ -8,3 +8,7 @@ class Map(object):
     def top(self, req: responder.Request, resp: responder.Response):
         resp.content = self.api.template('index.html')
 
+    def classes(self, req: responder.Request, resp: responder.Response):
+        resp.content = self.api.template('classes.js')
+
+
