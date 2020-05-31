@@ -97,19 +97,14 @@ class Engine(object):
                         break
                 else:
                     # logger.debug('bits empty')
-                    pass
+                    pr.completed = False
+                    pr.reason = 'bits empty at key %s' % k
+                    break
 
         if pr.completed:
-            ooo: Dict[str, any] = {}
-            try:
-                for k, v in table.items():
-                    if v.type != 'x':
-                        ooo[k] = result[k]
-            except KeyError as e:
-                pr.completed = False
-                pr.reason = e
-                pass
-            else:
-                pr.body = result
+            pr.body = result
+
+        else:
+            logger.critical(pr.reason)
 
         return pr
