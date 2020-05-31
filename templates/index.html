@@ -137,6 +137,7 @@
 
                 this.map = L.map('map');
                 this.map.setView(this.baseLatLng, 14);
+                console.log(this.map.getBounds())
                 this.map.on('click', function (e) {
                     this.panTo(e.latlng);  // Wao!
                     console.log(Object.keys(self.vessel).length); // never forget!
@@ -168,15 +169,16 @@
 
                 } else {
                     this.vessel[mmsi] = new Vessel();
-                    console.log('=== ' + mmsi + ' was matched with ' + profeel.name);
+                    console.log('=== found ' + mmsi + ' = ' + profeel.name);
                     if (speak) {
                         // speechSynthesis.cancel();
                         this.talker.text = 'I found ' + profeel.name;
                         speechSynthesis.speak(this.talker);
                     }
                 }
-                this.vessel[mmsi].setProfeel(profeel);
-                this.vessel[mmsi].marker.addTo(this.map);
+                const target = this.vessel[mmsi];
+                target.setProfeel(profeel);
+                target.marker.addTo(this.map);
                 // this.vessel[mmsi].marker.bounce()
                 // console.log('+++ ' + mmsi + ' = ' + profeel.name);
             }
@@ -269,6 +271,16 @@
                     delete this.vessel[mmsi];
                     console.log('--- ' + name + ' was retired');
                 }
+            }
+
+            isInside(location) {
+                const bound = this.map.getBounds();
+                return (
+                    location.lat > bound._southWest.lat &&
+                    location.lat < bound._northEast.lat &&
+                    location.lon > bound._southWest.lng &&
+                    location.lon < bound._northEast.lng
+                )
             }
 
             distance(lat1, lng1, lat2, lng2) {
