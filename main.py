@@ -209,6 +209,17 @@ class Collector(Thread):
     #     }
     #     self.infoQue.put(info)
     #
+
+    def sendText(self, *, mmsi: int, text: str, at: dt):
+        info: Dict[str, any] = {
+            'type': 'text',
+            'mmsi': mmsi,
+            'text': text,
+            'at': at.strftime(self.tsFormat),
+        }
+        self.infoQue.put(info)
+        pass
+
     def sendProfeel(self, *, mmsi: int, profeel: Profeel, at: dt):
         info: Dict[str, any] = {
             'type': 'profeel',
@@ -280,6 +291,11 @@ class Collector(Thread):
                 mmsi = header.mmsi
                 body = data.body
 
+                if header.type in [12, 14]:
+                    text = body['text']
+                    self.sendText(mmsi=mmsi, text=text, at=now)
+                    pass
+
                 if header.type in [5, 19, 24]:
                     name = body['shipname']
                     imo = body['imo'] if 'imo' in body else ''
@@ -303,9 +319,9 @@ class Collector(Thread):
                             if target.ready is False:
                                 target.ready = True
                                 # self.sendFull(mmsi=mmsi)
-                                logger.success('!!! %d(%s) was Completed' % (mmsi, target.profeel.name))
+                                logger.success('*** %d(%s) was Completed' % (mmsi, target.profeel.name))
 
-                elif header.type in [1, 2, 3, 18, 19]:
+                if header.type in [1, 2, 3, 18, 19]:
                     degLat = int(body['lat'])
                     degLon = int(body['lon'])
                     lat = float(degLat / 600000)

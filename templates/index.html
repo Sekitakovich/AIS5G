@@ -87,7 +87,7 @@
                 });
                 this.marker.setOpacity(0.25);
                 this.stopicon = L.icon({
-                    iconUrl: '../static/imgs/notEnter.png',
+                    iconUrl: '../static/imgs/anchor.png',
                 });
             }
 
@@ -148,7 +148,12 @@
                 this.tileLayer.addTo(this.map);
                 this.talker = new SpeechSynthesisUtterance();
                 this.talker.lang = 'en-US';
-                this.talker.rate = 2.0;
+                this.talker.rate = 1.0;
+                // this.talker.rate = 0.75;
+                this.talker.onend = function (e) {
+                    speechSynthesis.cancel();
+                    console.log('### elapsed ' + e.elapsedTime / 1000);
+                }
 
                 // this.woman = L.icon({
                 //     iconUrl: "../static/images/woman.gif",
@@ -165,6 +170,7 @@
                     this.vessel[mmsi] = new Vessel();
                     console.log('=== ' + mmsi + ' was matched with ' + profeel.name);
                     if (speak) {
+                        // speechSynthesis.cancel();
                         this.talker.text = 'I found ' + profeel.name;
                         speechSynthesis.speak(this.talker);
                     }
@@ -189,30 +195,29 @@
             bye(mmsi) {
                 if (mmsi in this.vessel) {
                     const target = this.vessel[mmsi];
-                    let name = 'UFO';
                     if (target.P) {
                         const profeel = this.vessel[mmsi].profeel;
-                        name = profeel.name;
+                        const name = profeel.name;
+                        this.talker.text = 'Oh! I lost ' + name;
+                        speechSynthesis.speak(this.talker);
                     }
-                    this.talker.text = 'Oh! I lost ' + name;
-                    speechSynthesis.speak(this.talker);
                     // delete(this.vessel[mmsi]);
                 }
             }
 
 // ---------------------------------------------------------------------
-            append(mmsi, location) {
-                if (mmsi in this.vessel) {
-
-                } else {
-                    const vessel = new Vessel();
-                    this.setLocation(mmsi, location);
-                    vessel.marker.addTo(this.map);
-                    this.vessel[mmsi] = vessel;
-                    // console.log('+++ ' + mmsi + ' was debut');
-                }
-            }
-
+//             append(mmsi, location) {
+//                 if (mmsi in this.vessel) {
+//
+//                 } else {
+//                     const vessel = new Vessel();
+//                     this.setLocation(mmsi, location);
+//                     vessel.marker.addTo(this.map);
+//                     this.vessel[mmsi] = vessel;
+//                     // console.log('+++ ' + mmsi + ' was debut');
+//                 }
+//             }
+//
 // ---------------------------------------------------------------------
             move(mmsi, location) { //console.log(location)
                 if (mmsi in this.vessel) {
@@ -221,7 +226,7 @@
                     const top = target.marker.getLatLng()
                     // console.log(location)
                     const d = this.distance(top['lat'], top['lng'], location['lat'], location['lon']);
-                    if (d) {
+                    if (d) { //console.log(d)
                         const status = parseInt(location['status']);
                         if (status === 1 || status === 2 || status === 3) {
                             target.marker.setIcon(target.stopicon);
@@ -258,9 +263,11 @@
 // ---------------------------------------------------------------------
             expire(mmsi) {
                 if (mmsi in this.vessel) {
-                    this.map.removeLayer(this.vessel[mmsi].marker);
+                    const target = this.vessel[mmsi];
+                    this.map.removeLayer(target.marker);
+                    const name = target.P ? target.profeel.name : 'unkown';
                     delete this.vessel[mmsi];
-                    console.log('--- ' + mmsi + ' was retired');
+                    console.log('--- ' + name + ' was retired');
                 }
             }
 
@@ -332,6 +339,7 @@
                         main.expire(mmsi);
                         break;
                     default:
+                        console.log(data);
                         break;
                 }
             }
