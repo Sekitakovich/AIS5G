@@ -100,6 +100,16 @@ class Engine(object):
                     pass
 
         if pr.completed:
-            pr.body = result
+            ooo: Dict[str, any] = {}
+            try:
+                for k, v in table.items():
+                    if v.type != 'x':
+                        ooo[k] = result[k]
+            except KeyError as e:
+                pr.completed = False
+                pr.reason = e
+                pass
+            else:
+                pr.body = result
 
         return pr

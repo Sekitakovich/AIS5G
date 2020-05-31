@@ -148,6 +148,7 @@
                 this.tileLayer.addTo(this.map);
                 this.talker = new SpeechSynthesisUtterance();
                 this.talker.lang = 'en-US';
+                this.talker.rate = 2.0;
 
                 // this.woman = L.icon({
                 //     iconUrl: "../static/images/woman.gif",
@@ -157,14 +158,16 @@
                 // this.wm.addTo(this.map);
             }
 
-            setProfeel(mmsi, profeel) {
+            setProfeel(mmsi, profeel, speak = false) {
                 if (mmsi in this.vessel) {
 
                 } else {
                     this.vessel[mmsi] = new Vessel();
                     console.log('=== ' + mmsi + ' was matched with ' + profeel.name);
-                    this.talker.text = 'I found ' + profeel.name;
-                    speechSynthesis.speak(this.talker);
+                    if (speak) {
+                        this.talker.text = 'I found ' + profeel.name;
+                        speechSynthesis.speak(this.talker);
+                    }
                 }
                 this.vessel[mmsi].setProfeel(profeel);
                 this.vessel[mmsi].marker.addTo(this.map);
@@ -185,9 +188,15 @@
 
             bye(mmsi) {
                 if (mmsi in this.vessel) {
-                    const profeel = this.vessel[mmsi].profeel;
-                    this.talker.text = 'Oh! ' + profeel.name + ' was lost';
+                    const target = this.vessel[mmsi];
+                    let name = 'UFO';
+                    if (target.P) {
+                        const profeel = this.vessel[mmsi].profeel;
+                        name = profeel.name;
+                    }
+                    this.talker.text = 'Oh! I lost ' + name;
                     speechSynthesis.speak(this.talker);
+                    // delete(this.vessel[mmsi]);
                 }
             }
 
@@ -310,7 +319,7 @@
                     //     break;
                     case 'profeel':
                         const profeel = data['profeel'];
-                        main.setProfeel(mmsi, profeel);
+                        main.setProfeel(mmsi, profeel, true);
                         break;
                     case 'live':
                         const location = data['location'];

@@ -169,14 +169,14 @@ class Dispatcher(object):
                     result.reason = s.reason
                     logger.error(s.reason)
 
-            elif thisType == 20:
-                s = self.type20.parse(payload=payload)
-                if s.completed:
-                    result.body = s.body
-                else:
-                    result.completed = False
-                    result.reason = s.reason
-                    logger.error(s.reason)
+            # elif thisType == 20:
+            #     s = self.type20.parse(payload=payload)
+            #     if s.completed:
+            #         result.body = s.body
+            #     else:
+            #         result.completed = False
+            #         result.reason = s.reason
+            #         logger.error(s.reason)
 
             elif thisType == 21:
                 s = self.type21.parse(payload=payload)
