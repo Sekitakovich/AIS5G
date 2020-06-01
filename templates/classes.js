@@ -94,8 +94,7 @@ class Vessel {
                     img = '../static/imgs/smile.png';
                 }
             }
-            const newIcon = L.icon({iconUrl: img}); //console.log(newIcon)
-            this.icon = newIcon; // console.log(this.icon)
+            this.icon = L.icon({iconUrl: img}); // console.log(this.icon)
         }
     }
 

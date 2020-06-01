@@ -46,7 +46,7 @@
             dataType: 'json',
         }).done(function (data) { //console.log(data)
             for (let k in data) { //console.log(data[k]['profeel'])
-                main.setProfeel(k, data[k]['profeel']);
+                main.setProfeel(k, data[k]['profeel'], false);
                 main.move(k, data[k]['location']);
             }
             console.log('### preload completed');

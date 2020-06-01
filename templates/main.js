@@ -38,16 +38,13 @@ class Main {
         this.tileLayer.addTo(this.map);
     }
 
-    setProfeel(mmsi, profeel, speak = false) {
+    setProfeel(mmsi, profeel, debug = true) {
         if (mmsi in this.vessel) {
 
         } else {
             this.vessel[mmsi] = new Vessel();
-            console.log('=== found ' + mmsi + ' = ' + profeel.name);
-            if (speak) {
-                // speechSynthesis.cancel();
-                // this.talker.text = 'I found ' + profeel.name;
-                // speechSynthesis.speak(this.talker);
+            if (debug) {
+                console.log('=== found ' + mmsi + ' = ' + profeel.name);
             }
         }
         const target = this.vessel[mmsi];
