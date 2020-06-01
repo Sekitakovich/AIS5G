@@ -36,8 +36,6 @@ class Vessel {
             iconSize: [16, 16],
         });
 
-        // jQuery(this.icon).addClass('tako');
-
         this.marker = L.Marker.movingMarker([[0, 0]], [], {
             icon: this.icon,
             rotationAngle: 0,
@@ -79,12 +77,6 @@ class Vessel {
             this.P = true;
 
             this.marker.bindTooltip(this.profeel.name);
-            // this.marker.on('click', function (e) {
-            //     console.log(this.profeel);
-            //     // speechSynthesis.cancel();
-            //     this.talker.text = this.profeel.name //+ ' ' + this.profeel.callsign;
-            //     speechSynthesis.speak(this.talker);
-            // })
 
             let img = '../static/imgs/kaniS.png';
             if (profeel.AISclass !== 'A') {
