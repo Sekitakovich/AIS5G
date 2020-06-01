@@ -1,6 +1,6 @@
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 class Main {
-    constructor(div) {
+    constructor(div, zoomDefault, gauge) {
 
         const self = this; // mmm ...
 
@@ -8,12 +8,13 @@ class Main {
         this.vessel = {};
         this.baseLatLng = [1.236104, 103.835729];
 
+        this.gauge = gauge;
         this.map = L.map(div);
         this.map.on('load', function (e) {
             console.log(this);
             // M.show();
         });
-        this.map.setView(this.baseLatLng, 14);
+        this.map.setView(this.baseLatLng, zoomDefault);
         console.log(this.map.getBounds())
         this.map.on('click', function (e) {
             // this.panTo(e.latlng);  // Wao!
@@ -114,9 +115,10 @@ class Main {
                     target.marker.setLatLng(lonlat);
                 }
                 if (this.lockOn && mmsi === this.lockOn) {
-                    console.log('Chasing ' + mmsi);
+                    console.log('Chasing ' + mmsi + ' ' + location.sog);
                     // console.log(self);
                     this.map.panTo([location.lat, location.lon]);
+                    this.gauge.set(location.sog);
                 }
             } else {
                 if (isNaN(d)) {
