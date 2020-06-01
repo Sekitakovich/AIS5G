@@ -1,7 +1,8 @@
-from Engine.template import Engine as Template
+from typing import Dict
+from Engine.template import Engine, Member
 
 
-class Structure(Template):  # Type 6: Binary Addressed Message
+class Structure(Engine):  # Type 6: Binary Addressed Message
 
     def __init__(self):
 
@@ -17,24 +18,24 @@ class Structure(Template):  # Type 6: Binary Addressed Message
             # 'data': {'type': 'd', 'offset': 88, 'length': 920},
         }
 
-        self.data = {}
-
-    def decode(self, *, payload: str) -> dict:
-
-        item = self.parse(payload=payload, table=self.body)
-
-        if item['dac'] in self.data:
-            dac = self.data[item['dac']]
-            if item['fid'] in dac:
-                data = dac[item['fid']]
-                plus = self.parse(payload=payload, table=data)
-                item.update(plus)
-                # self.logger.debug(msg=item)
-            else:
-                pass
-                # self.logger.debug('--- not found DAC:FID entry(%d:%d)' % (item['dac'], item['fid']))
-        else:
-            pass
-            # self.logger.debug('--- not found DAC:FID entry(%d:%d)' % (item['dac'], item['fid']))
-
-        return item
+        # self.data = {}
+        #
+    # def decode(self, *, payload: str) -> dict:
+    #
+    #     item = self.decode(payload=payload)
+    #
+    #     if item['dac'] in self.data:
+    #         dac = self.data[item['dac']]
+    #         if item['fid'] in dac:
+    #             data = dac[item['fid']]
+    #             plus = self.decode(payload=payload)
+    #             item.update(plus)
+    #             # self.logger.debug(msg=item)
+    #         else:
+    #             pass
+    #             # self.logger.debug('--- not found DAC:FID entry(%d:%d)' % (item['dac'], item['fid']))
+    #     else:
+    #         pass
+    #         # self.logger.debug('--- not found DAC:FID entry(%d:%d)' % (item['dac'], item['fid']))
+    #
+    #     return item

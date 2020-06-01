@@ -21,7 +21,7 @@ if __name__ == '__main__':
     ]
 
     for s in p:
-        r = e.parse(payload=s)
+        r = e.decode(payload=s)
         if r.completed:
             print(r.body)
         else:

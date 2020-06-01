@@ -21,11 +21,12 @@ class Location {
 
 // -------------------------------------------------------------------------------------------------
 class Vessel {
-    // constructor(mmsi, profeel, location, at) {
-    constructor() {
+    constructor(main, mmsi) {
 
         const self = this; // mmm ...
 
+        this.main = main;
+        this.mmsi = mmsi;
         this.at = new Date();
         this.P = false;
         this.L = false;
@@ -52,6 +53,8 @@ class Vessel {
         });
         this.marker.on('click', function (e) {
             console.log(this.profeel);
+            self.main.lockOn = parseInt(self.mmsi);
+            console.log(self.main);
             // speechSynthesis.cancel();
             this.talker.text = this.profeel.name //+ ' ' + this.profeel.callsign;
             speechSynthesis.speak(this.talker);
@@ -77,6 +80,7 @@ class Vessel {
             this.P = true;
 
             this.marker.bindTooltip(this.profeel.name);
+            // this.marker.bindPopup(this.profeel.name);
 
             let img = '../static/imgs/kaniS.png';
             if (profeel.AISclass !== 'A') {
@@ -95,6 +99,7 @@ class Vessel {
                 }
             }
             this.icon = L.icon({iconUrl: img}); // console.log(this.icon)
+            // this.marker.setIcon(this.icon);
         }
     }
 

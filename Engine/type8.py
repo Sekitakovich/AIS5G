@@ -56,13 +56,13 @@ class Structure(Template):  # Type 8: Binary Broadcast Message
 
     def decode(self, *, payload: str) -> ResultBox:
 
-        item = self.parse(payload=payload, table=self.body)
+        item = self.decode(payload=payload, table=self.body)
 
         if item.member['dac'] in self.data:
             dac = self.data[item.member['dac']]
             if item.member['fid'] in dac:
                 data = dac[item.member['fid']]
-                plus = self.parse(payload=payload, table=data)
+                plus = self.decode(payload=payload, table=data)
                 item.member.update(plus.member)
                 self.logger.debug(msg=item.member)
             else:

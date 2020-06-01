@@ -80,9 +80,7 @@
                         break;
                     case 'live':
                         const location = data['location'];
-                        // main.append(mmsi, location);
                         main.move(mmsi, location);
-                        // console.log(location);
                         break;
                     case 'retire':
                         main.expire(mmsi);

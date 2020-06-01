@@ -33,7 +33,7 @@ class Engine(object):
 
         return -int(bits[0]) << len(bits) | int(bits, 2)
 
-    def parse(self, *, payload: str) -> ParseResult:
+    def decode(self, *, payload: str) -> ParseResult:
 
         pr = ParseResult()  # challenge
 

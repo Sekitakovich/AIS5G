@@ -26,7 +26,7 @@ class Main {
         });
         this.map.on('moveend', function (e) {
             // console.log(this);
-            console.log('Move to ' + self.map.getCenter())
+            console.log('map was pan to ' + self.map.getCenter())
         });
 
         this.tileLayer = L.tileLayer.grayscale('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -36,13 +36,15 @@ class Main {
             // console.log(e);
         });
         this.tileLayer.addTo(this.map);
+
+        this.lockOn = 0;
     }
 
     setProfeel(mmsi, profeel, debug = true) {
         if (mmsi in this.vessel) {
 
         } else {
-            this.vessel[mmsi] = new Vessel();
+            this.vessel[mmsi] = new Vessel(this, mmsi);
             if (debug) {
                 console.log('=== found ' + mmsi + ' = ' + profeel.name);
             }
@@ -60,7 +62,7 @@ class Main {
         if (mmsi in this.vessel) {
 
         } else {
-            this.vessel[mmsi] = new Vessel();
+            this.vessel[mmsi] = new Vessel(this, mmsi);
             // console.log('+++ Found ' + mmsi);
         }
         this.vessel[mmsi].setLocation(location);
@@ -110,6 +112,11 @@ class Main {
                     target.marker.moveTo(lonlat, duration);
                 } else {
                     target.marker.setLatLng(lonlat);
+                }
+                if (this.lockOn && mmsi === this.lockOn) {
+                    console.log('Chasing ' + mmsi);
+                    // console.log(self);
+                    this.map.panTo([location.lat, location.lon]);
                 }
             } else {
                 if (isNaN(d)) {

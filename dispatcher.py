@@ -64,14 +64,14 @@ class Dispatcher(object):
 
     def parse(self, *, payload: str) -> DispatchResult:
         result = DispatchResult()
-        pr = self.header.parse(payload=payload)
+        pr = self.header.decode(payload=payload)
         if pr.completed:
             header = pr.body
             result.header = Header(mmsi=header['mmsi'], repeat=header['repeat'], type=header['type'])
             thisType = header['type']
             thisMMSI = header['mmsi']
             if thisType in (1, 2, 3):
-                s = self.type1to3.parse(payload=payload)
+                s = self.type1to3.decode(payload=payload)
                 if s.completed:
                     result.body = s.body
                 else:
@@ -80,7 +80,7 @@ class Dispatcher(object):
                     logger.error(s.reason)
 
             elif thisType in [4, 11]:
-                s = self.type4and11.parse(payload=payload)
+                s = self.type4and11.decode(payload=payload)
                 if s.completed:
                     result.body = s.body
                 else:
@@ -89,7 +89,7 @@ class Dispatcher(object):
                     logger.error(s.reason)
 
             elif thisType == 5:
-                s = self.type5.parse(payload=payload)
+                s = self.type5.decode(payload=payload)
                 if s.completed:
                     result.body = s.body
                 else:
@@ -98,7 +98,7 @@ class Dispatcher(object):
                     logger.error(s.reason)
 
             elif thisType == 6:
-                s = self.type6.parse(payload=payload)
+                s = self.type6.decode(payload=payload)
                 if s.completed:
                     result.body = s.body
                 else:
@@ -113,7 +113,7 @@ class Dispatcher(object):
                 result.support = False
 
             elif thisType == 12:
-                s = self.type12.parse(payload=payload)
+                s = self.type12.decode(payload=payload)
                 if s.completed:
                     result.body = s.body
                 else:
@@ -122,7 +122,7 @@ class Dispatcher(object):
                     logger.error(s.reason)
 
             elif thisType == 14:
-                s = self.type14.parse(payload=payload)
+                s = self.type14.decode(payload=payload)
                 if s.completed:
                     result.body = s.body
                 else:
@@ -134,7 +134,7 @@ class Dispatcher(object):
                 result.support = False
 
             elif thisType == 16:
-                s = self.type16.parse(payload=payload)
+                s = self.type16.decode(payload=payload)
                 if s.completed:
                     result.body = s.body
                 else:
@@ -143,7 +143,7 @@ class Dispatcher(object):
                     logger.error(s.reason)
 
             elif thisType == 17:
-                s = self.type17.parse(payload=payload)
+                s = self.type17.decode(payload=payload)
                 if s.completed:
                     result.body = s.body
                 else:
@@ -152,7 +152,7 @@ class Dispatcher(object):
                     logger.error(s.reason)
 
             elif thisType == 18:
-                s = self.type18.parse(payload=payload)
+                s = self.type18.decode(payload=payload)
                 if s.completed:
                     result.body = s.body
                 else:
@@ -161,7 +161,7 @@ class Dispatcher(object):
                     logger.error(s.reason)
 
             elif thisType == 19:
-                s = self.type19.parse(payload=payload)
+                s = self.type19.decode(payload=payload)
                 if s.completed:
                     result.body = s.body
                 else:
@@ -179,7 +179,7 @@ class Dispatcher(object):
             #         logger.error(s.reason)
 
             elif thisType == 21:
-                s = self.type21.parse(payload=payload)
+                s = self.type21.decode(payload=payload)
                 if s.completed:
                     result.body = s.body
                 else:
@@ -194,7 +194,7 @@ class Dispatcher(object):
 
                 target = self.save24[thisMMSI]
 
-                ooo = self.type24A.parse(payload=payload)
+                ooo = self.type24A.decode(payload=payload)
                 if ooo.completed:
                     partA = ooo.body
                     if partA and partA['partno'] == 0:
@@ -204,7 +204,7 @@ class Dispatcher(object):
                     result.reason = ooo.reason
                     logger.error(ooo.reason)
 
-                ooo = self.type24B.parse(payload=payload)
+                ooo = self.type24B.decode(payload=payload)
                 if ooo.completed:
                     partB = ooo.body
                     if partB and partB['partno'] == 1:
@@ -225,7 +225,7 @@ class Dispatcher(object):
                     result.completed = False
 
             elif thisType == 27:
-                s = self.type27.parse(payload=payload)
+                s = self.type27.decode(payload=payload)
                 if s.completed:
                     result.body = s.body
                 else:
