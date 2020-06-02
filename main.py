@@ -410,7 +410,7 @@ class Main(responder.API):
         self.add_route('/shiplist', self.shipList)
         self.add_route('/classes.js', self.map.classes)
         self.add_route('/main.js', self.map.main)
-        self.add_route('favicon.ico', self.favicon)
+        self.add_route('/favicon.ico', self.favicon)
 
         self.run(address='0.0.0.0', port=port)
 
