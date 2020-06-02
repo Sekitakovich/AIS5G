@@ -39,6 +39,7 @@ class Main {
         this.tileLayer.addTo(this.map);
 
         this.lockOn = 0;
+        this.jingle = new Audio('../static/MP3/se_maoudamashii_system49.mp3');
     }
 
     setProfeel(mmsi, profeel, debug = true) {
@@ -115,6 +116,7 @@ class Main {
                     target.marker.setLatLng(lonlat);
                 }
                 if (this.lockOn && mmsi === this.lockOn) {
+                    this.jingle.play();
                     console.log('Chasing ' + mmsi + ' ' + location.sog);
                     // console.log(self);
                     this.map.panTo([location.lat, location.lon]);
