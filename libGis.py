@@ -4,6 +4,12 @@ from dataclasses import dataclass
 from typing import List
 
 
+@dataclass()
+class LatLng(object):  # on DEG format
+    lat: float = 0.0
+    lng: float = 0.0
+
+
 class GISLib(object):
 
     @classmethod

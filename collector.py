@@ -17,7 +17,7 @@ import responder
 from dispatcher import Dispatcher, DispatchResult
 from websocketServer import WebsocketServer
 from map import Map
-from gis import GISLib
+from libGis import GISLib
 
 
 class fromUDP(Process):

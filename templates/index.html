@@ -138,6 +138,13 @@
                     case 'retire':
                         main.expire(mmsi);
                         break;
+                    case 'pan':
+                        const lat = data['lat'];
+                        const lng = data['lng'];
+                        // console.log(lat, lng);
+                        // main.map.flyTo([lat, lng]);
+                        main.map.panTo([lat, lng]);
+                        break;
                     default:
                         console.log(data);
                         break;

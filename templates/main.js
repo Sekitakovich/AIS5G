@@ -27,7 +27,7 @@ class Main {
         });
         this.map.on('moveend', function (e) {
             // console.log(this);
-            console.log('map was pan to ' + self.map.getCenter())
+            // console.log('map was pan to ' + self.map.getCenter())
         });
 
         this.tileLayer = L.tileLayer.grayscale('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -115,13 +115,13 @@ class Main {
                 } else {
                     target.marker.setLatLng(lonlat);
                 }
-                if (this.lockOn && mmsi === this.lockOn) {
-                    this.jingle.play();
-                    console.log('Chasing ' + mmsi + ' ' + location.sog);
-                    // console.log(self);
-                    this.map.panTo([location.lat, location.lon]);
-                    this.gauge.set(location.sog);
-                }
+                // if (this.lockOn && mmsi === this.lockOn) {
+                //     this.jingle.play();
+                //     console.log('Chasing ' + mmsi + ' ' + location.sog);
+                //     // console.log(self);
+                //     this.map.panTo([location.lat, location.lon]);
+                //     this.gauge.set(location.sog);
+                // }
             } else {
                 if (isNaN(d)) {
                     console.log(mmsi + ' NaN at ' + top + ' and ' + location)

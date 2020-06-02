@@ -17,8 +17,9 @@ import responder
 from dispatcher import Dispatcher, DispatchResult
 from websocketServer import WebsocketServer
 from map import Map
-from gis import GISLib
+from libGis import GISLib, LatLng
 from common import Location, Profeel, Vessel
+from patrol import Spy
 
 
 class fromUDP(Process):
@@ -191,11 +192,29 @@ class Collector(Thread):
         self.locker = Lock()
         self.t = Thread(target=self.cleanup, daemon=True)
 
+        self.spy = Spy(lat=1.250969, lng=103.759003)
+        self.ooo = Thread(target=self.fly, daemon=True, name='kite')
+        self.ooo.start()
+
     def run(self) -> None:
         self.t.start()
         while True:
             data: DispatchResult = self.qp.get()
             self.entry(data=data)
+
+    def fly(self):
+        passed: int = 0
+        while True:
+            time.sleep(1)
+            passed += 1
+            ooo = self.spy.move(kmH=250, secs=passed, heading=0)
+            info: Dict[str, any] = {
+                'type': 'pan',
+                'lat': ooo.lat,
+                'lng': ooo.lng,
+            }
+            self.infoQue.put(info)
+            # logger.info(info)
 
     # def sendFull(self, *, mmsi: int):
     #     target = self.vessel[mmsi]
@@ -344,7 +363,8 @@ class Collector(Thread):
 
                     if mmsi in self.vessel:
                         target = self.vessel[mmsi]
-                        distance = GISLib.flatDistance(x1=target.location.lat, x2=location.lat, y1=target.location.lon, y2=location.lon)
+                        distance = GISLib.flatDistance(x1=target.location.lat, x2=location.lat, y1=target.location.lon,
+                                                       y2=location.lon)
                         if distance:
                             self.sendLocation(mmsi=mmsi, location=location, at=now)
                         else:
