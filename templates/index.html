@@ -98,11 +98,13 @@
             type: 'GET',
             dataType: 'json',
         }).done(function (data) { //console.log(data)
+            let counter = 0;
             for (let k in data) { //console.log(data[k]['profeel'])
                 main.setProfeel(k, data[k]['profeel'], false);
                 main.move(k, data[k]['location']);
+                counter++;
             }
-            console.log('### preload completed');
+            console.log('### preload completed ' + counter);
         });
 // -------------------------------------------------------------------------------------------------
 

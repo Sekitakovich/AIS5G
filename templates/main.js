@@ -70,20 +70,6 @@ class Main {
         this.vessel[mmsi].setLocation(location);
         // console.log('+++ ' + mmsi + ' = ' + profeel.name);
     }
-
-// ---------------------------------------------------------------------
-//             append(mmsi, location) {
-//                 if (mmsi in this.vessel) {
-//
-//                 } else {
-//                     const vessel = new Vessel();
-//                     this.setLocation(mmsi, location);
-//                     vessel.marker.addTo(this.map);
-//                     this.vessel[mmsi] = vessel;
-//                     // console.log('+++ ' + mmsi + ' was debut');
-//                 }
-//             }
-//
 // ---------------------------------------------------------------------
     move(mmsi, location) { //console.log(location)
         if (mmsi in this.vessel) {
