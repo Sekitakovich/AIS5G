@@ -410,8 +410,13 @@ class Main(responder.API):
         self.add_route('/shiplist', self.shipList)
         self.add_route('/classes.js', self.map.classes)
         self.add_route('/main.js', self.map.main)
+        self.add_route('/favicon.ico', self.favicon)
 
         self.run(address='0.0.0.0', port=port)
+
+    def favicon(self, req: responder.Request, resp: responder.Response):
+        with open('static/imgs/kani.ico', 'rb') as f:
+            resp.content = f.read()
 
     def shipList(self, req: responder.Request, resp: responder.Response):
         s = self.collector.listUP()

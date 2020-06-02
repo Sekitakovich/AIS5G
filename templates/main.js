@@ -1,6 +1,6 @@
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 class Main {
-    constructor(div) {
+    constructor(div, zoomDefault, gauge) {
 
         const self = this; // mmm ...
 
@@ -8,12 +8,13 @@ class Main {
         this.vessel = {};
         this.baseLatLng = [1.236104, 103.835729];
 
+        this.gauge = gauge;
         this.map = L.map(div);
         this.map.on('load', function (e) {
             console.log(this);
             // M.show();
         });
-        this.map.setView(this.baseLatLng, 14);
+        this.map.setView(this.baseLatLng, zoomDefault);
         console.log(this.map.getBounds())
         this.map.on('click', function (e) {
             // this.panTo(e.latlng);  // Wao!
@@ -26,7 +27,7 @@ class Main {
         });
         this.map.on('moveend', function (e) {
             // console.log(this);
-            console.log('Move to ' + self.map.getCenter())
+            console.log('map was pan to ' + self.map.getCenter())
         });
 
         this.tileLayer = L.tileLayer.grayscale('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -36,13 +37,16 @@ class Main {
             // console.log(e);
         });
         this.tileLayer.addTo(this.map);
+
+        this.lockOn = 0;
+        this.jingle = new Audio('../static/MP3/se_maoudamashii_system49.mp3');
     }
 
     setProfeel(mmsi, profeel, debug = true) {
         if (mmsi in this.vessel) {
 
         } else {
-            this.vessel[mmsi] = new Vessel();
+            this.vessel[mmsi] = new Vessel(this, mmsi);
             if (debug) {
                 console.log('=== found ' + mmsi + ' = ' + profeel.name);
             }
@@ -60,7 +64,7 @@ class Main {
         if (mmsi in this.vessel) {
 
         } else {
-            this.vessel[mmsi] = new Vessel();
+            this.vessel[mmsi] = new Vessel(this, mmsi);
             // console.log('+++ Found ' + mmsi);
         }
         this.vessel[mmsi].setLocation(location);
@@ -110,6 +114,13 @@ class Main {
                     target.marker.moveTo(lonlat, duration);
                 } else {
                     target.marker.setLatLng(lonlat);
+                }
+                if (this.lockOn && mmsi === this.lockOn) {
+                    this.jingle.play();
+                    console.log('Chasing ' + mmsi + ' ' + location.sog);
+                    // console.log(self);
+                    this.map.panTo([location.lat, location.lon]);
+                    this.gauge.set(location.sog);
                 }
             } else {
                 if (isNaN(d)) {
