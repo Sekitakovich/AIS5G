@@ -31,6 +31,7 @@ class Header(object):
 
 @dataclass()
 class DispatchResult(object):
+    vdo: bool = False
     header: Header = Header()
     body: Dict[str, any] = field(default_factory=dict)
     completed: bool = True
@@ -62,8 +63,8 @@ class Dispatcher(object):
 
         self.save24: Dict[str, dict] = {}
 
-    def parse(self, *, payload: str) -> DispatchResult:
-        result = DispatchResult()
+    def parse(self, *, payload: str, vdo: bool) -> DispatchResult:
+        result = DispatchResult(vdo=vdo)
         pr = self.header.decode(payload=payload)
         if pr.completed:
             header = pr.body

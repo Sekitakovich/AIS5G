@@ -1,6 +1,7 @@
 from functools import reduce
 from operator import xor
 from loguru import logger
+import sys
 from threading import Thread, Lock
 import queue
 from serial import Serial
@@ -21,6 +22,20 @@ from libGis import GISLib, LatLng
 from common import Location, Profeel, Vessel
 from patrol import Spy
 
+from dbsession import DBSession, Record
+from multiprocessing import Queue as MPQueue
+
+logger.remove()
+logger.add(
+    sys.stdout,
+    colorize=True,
+    format="<level>{time:HH:mm:ss} {file}:{line}:{function} {message}</level>")
+logger.add(
+    'logs/mc.log',
+    rotation='1 day',
+    level='WARNING',
+    encoding='cp932')
+
 
 class fromUDP(Process):
     def __init__(self, *, mcip: str, mcport: int, quePoint: MPQueue):
@@ -30,6 +45,10 @@ class fromUDP(Process):
         self.mcip = mcip
         self.mcport = mcport
         self.quePoint = quePoint
+
+        # self.dbQueue = MPQueue()
+        # self.dbsession = DBSession(qp=self.dbQueue, path='db')
+        # self.dbsession.start()
 
     def run(self) -> None:
         bufferSize = 4096
@@ -44,6 +63,9 @@ class fromUDP(Process):
                 while run:
                     udpPacket, ipv4 = sock.recvfrom(bufferSize)
                     self.quePoint.put(udpPacket)
+                    record = Record(at=dt.now(), sentence=udpPacket)
+                    # self.dbQueue.put(record)
+
         except (socket.error,) as e:
             run = False
             logger.critical(e)
@@ -52,7 +74,7 @@ class fromUDP(Process):
 class Receiver(object):
 
     def __init__(self, *, serialPort: str = '', baudrate: int = 0, mcip: str = '', mcport: int = 0,
-                 outQueue: queue.Queue):
+                 outQueue: queue.Queue, infoQueue: queue.Queue):
 
         self.fragment = []
         self.seq = 0
@@ -63,6 +85,7 @@ class Receiver(object):
         self.counter = 0
 
         self.outQueue = outQueue
+        self.infoQueue = infoQueue
 
         self.w = Thread(target=self.welcome, daemon=True)
         self.w.start()
@@ -110,14 +133,29 @@ class Receiver(object):
             obj = self.quePoint.get()
             self.enter(nmea=obj)
 
-    def parse(self, *, payload: bytes):
+    def parse(self, *, payload: bytes, vdo: bool):
         try:
-            result = self.engine.parse(payload=payload.decode())
+            result = self.engine.parse(payload=payload.decode(), vdo=vdo)
         except ValueError as e:
             logger.error(e)
         else:
             if result.support == True and result.completed == True:
-                self.outQueue.put(result)
+                if result.vdo:
+                    if result.header.type == 1:
+                        body = result.body
+                        info: Dict[str, any] = {
+                            'type': 'pan',
+                            'sog': body['speed'],
+                            'hdg': body['heading'],
+                            'lat': body['lat'] / 600000,
+                            'lng': body['lon'] / 600000,
+                        }
+                        logger.info(info)
+                        self.infoQueue.put(info)
+                    else:
+                        logger.debug('VDO %d: %s' % (result.header.type, result.body))
+                else:
+                    self.outQueue.put(result)
         self.counter += 1
 
     def enter(self, *, nmea: bytes) -> bool:
@@ -134,7 +172,8 @@ class Receiver(object):
                 calc = 0
             if csum == calc:
                 item = main.split(b',')
-                if item[0][-3:] == b'VDM':
+                if item[0][-3:] in (b'VDM', b'VDO'):
+                    vdo = item[0][-3:] == b'VDO'
                     all = int(item[1])
                     now = int(item[2])
                     channel = item[4]  # Don't care
@@ -151,7 +190,7 @@ class Receiver(object):
                                 payload = b''.join(self.fragment)
                                 self.fragment.clear()
                                 self.seq = 0
-                                self.parse(payload=payload)
+                                self.parse(payload=payload, vdo=vdo)
                             else:
                                 pass
                         else:
@@ -159,7 +198,7 @@ class Receiver(object):
                             self.fragment.clear()
                             raise ValueError('Fragment sequence mismatch')
                     else:
-                        self.parse(payload=body)
+                        self.parse(payload=body, vdo=vdo)
                 else:
                     pass
             else:
@@ -184,7 +223,7 @@ class Collector(Thread):
         self.tsFormat = '%Y-%m-%d %H:%M:%S'
 
         self.qp = queue.Queue()
-        self.receiver = Receiver(mcip='239.192.0.1', mcport=60001, outQueue=self.qp)
+        self.receiver = Receiver(mcip='239.192.0.1', mcport=60001, outQueue=self.qp, infoQueue=infoQueue)
 
         self.vessel: Dict[int, Vessel] = {}
         self.entries: int = 0
@@ -193,8 +232,8 @@ class Collector(Thread):
         self.t = Thread(target=self.cleanup, daemon=True)
 
         self.spy = Spy(lat=1.250969, lng=103.759003)
-        self.ooo = Thread(target=self.fly, daemon=True, name='kite')
-        self.ooo.start()
+        # self.ooo = Thread(target=self.fly, daemon=True, name='kite')
+        # self.ooo.start()
 
     def run(self) -> None:
         self.t.start()
@@ -368,7 +407,8 @@ class Collector(Thread):
                         if distance:
                             self.sendLocation(mmsi=mmsi, location=location, at=now)
                         else:
-                            logger.warning('Zero distance at %d (%s)' % (mmsi, target.profeel.name))
+                            # logger.warning('Zero distance at %d (%s)' % (mmsi, target.profeel.name))
+                            pass
                         target.location = location
                         target.at = now
                         target.lv = True

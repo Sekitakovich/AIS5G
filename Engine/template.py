@@ -1,6 +1,7 @@
 from typing import Dict
 from dataclasses import dataclass, field
 from loguru import logger
+from numba import jit
 
 from common import Location, Profeel
 

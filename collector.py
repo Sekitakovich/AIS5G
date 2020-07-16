@@ -19,6 +19,8 @@ from websocketServer import WebsocketServer
 from map import Map
 from libGis import GISLib
 
+from dbsession import DBSession, Record
+
 
 class fromUDP(Process):
     def __init__(self, *, mcip: str, mcport: int, quePoint: MPQueue):
@@ -120,6 +122,7 @@ class Receiver(object):
 
     def enter(self, *, nmea: bytes) -> bool:
         success: bool = True
+
         try:
             part = nmea.split(b'*')
             main = part[0][1:]
@@ -131,7 +134,7 @@ class Receiver(object):
                 calc = 0
             if csum == calc:
                 item = main.split(b',')
-                if item[0][-3:] == b'VDM':
+                if item[0][-3:] in (b'VDM', b'VDO'):
                     all = int(item[1])
                     now = int(item[2])
                     channel = item[4]  # Don't care
