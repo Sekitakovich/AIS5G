@@ -76,6 +76,8 @@ class Receiver(object):
     def __init__(self, *, serialPort: str = '', baudrate: int = 0, mcip: str = '', mcport: int = 0,
                  outQueue: queue.Queue, infoQueue: queue.Queue):
 
+        self.useVDO = False
+
         self.fragment = []
         self.seq = 0
 
@@ -141,21 +143,21 @@ class Receiver(object):
         else:
             if result.support == True and result.completed == True:
                 if result.vdo:
-                    if result.header.type == 1:
-                        body = result.body
-                        info: Dict[str, any] = {
-                            'type': 'pan',
-                            'sog': body['speed'],
-                            'hdg': body['heading'],
-                            'lat': body['lat'] / 600000,
-                            'lng': body['lon'] / 600000,
-                        }
-                        logger.info(info)
-                        self.infoQueue.put(info)
-                    else:
-                        logger.debug('VDO %d: %s' % (result.header.type, result.body))
-                else:
-                    self.outQueue.put(result)
+                    if self.useVDO:
+                        if result.header.type == 1:
+                            body = result.body
+                            info: Dict[str, any] = {
+                                'type': 'pan',
+                                'sog': body['speed'],
+                                'hdg': body['heading'],
+                                'lat': body['lat'] / 600000,
+                                'lng': body['lon'] / 600000,
+                            }
+                            logger.info(info)
+                            self.infoQueue.put(info)
+                        else:
+                            logger.debug('VDO %d: %s' % (result.header.type, result.body))
+                self.outQueue.put(result)
         self.counter += 1
 
     def enter(self, *, nmea: bytes) -> bool:
